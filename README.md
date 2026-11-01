@@ -9,7 +9,7 @@ These are to be placed in the `/output/` folder. Raw files are placed in `/data/
 - `/output/areal_masks/` - Areal masks for tabular data (4320x2160 WGS84 Equirectangular, 5-arcminute grid):
   - `provinces.png`: 4320x2160 RGB raster flat map.
   - `country_masks.json`: RGB colour definitions per country.
-  - `table_masks.json`: Tabular dataset mappings to canonical country masks.
+  - `table_masks.json`: Tabular dataset mappings to country masks.
   - `subadmin_masks.json`: Regional division masks.
   - `city_masks.json`: Major urban coordinates.
 - `/output/json/raw_tables/` - Unmodified KNAW tabular records indexed by Id_pop.
