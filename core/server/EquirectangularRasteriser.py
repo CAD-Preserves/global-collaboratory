@@ -25,6 +25,7 @@ class EquirectangularRasteriser:
 
     #Declare local instance variables
     self.crs = str(grid_config_obj.get("crs", "EPSG:4326"))
+    self.default_coast_band_px = float(frontier_config_obj.get("coast_band_px", 3.0))
     self.default_max_pocket_px = int(frontier_config_obj.get("max_pocket_px", 48))
     self.default_min_island_ratio = float(frontier_config_obj.get("min_island_coverage_ratio", 0.25))
     self.default_min_speck_px = int(frontier_config_obj.get("min_speck_px", 4))
@@ -449,11 +450,11 @@ class EquirectangularRasteriser:
 
   def snapHistoricalFrontierToHost (self, arg1_raw_indices, arg2_host_indices, arg3_options=None):
     """
-    @brief Snap a coarse historical or GADM mask onto an exact Natural Earth 10m host mask, eliminating coastal shortfall strips and graze specks while preserving true inland frontiers.
+    @brief Snap a coarse historical or GADM mask onto an exact Natural Earth 10m host mask along coastal/outer bands while preserving true inland frontiers pixel-for-pixel.
     @param arg1_raw_indices Sorted 1D int32 flat pixel array of the raw historical/regional polygon.
     @param arg2_host_indices Sorted 1D int32 flat pixel array of the canonical Natural Earth 10m host countries.
-    @param arg3_options Optional dictionary overriding snap_radius_px, max_pocket_px, min_speck_px or min_island_coverage_ratio.
-    @return Sorted 1D int32 flat pixel array strictly within arg2_host_indices with crisp coastlines and borders.
+    @param arg3_options Optional dictionary overriding coast_band_px, snap_radius_px, max_pocket_px, min_speck_px or min_island_coverage_ratio.
+    @return Sorted 1D int32 flat pixel array strictly within arg2_host_indices with crisp coastlines and undistorted inland borders.
     """
     #Convert from parameters
     raw_indices = arg1_raw_indices
@@ -461,6 +462,8 @@ class EquirectangularRasteriser:
     options = arg3_options if isinstance(arg3_options, dict) else {}
 
     #Initialise options
+    if "coast_band_px" not in options:
+      options["coast_band_px"] = self.default_coast_band_px
     if "max_pocket_px" not in options:
       options["max_pocket_px"] = self.default_max_pocket_px
     if "min_island_coverage_ratio" not in options:
@@ -472,10 +475,12 @@ class EquirectangularRasteriser:
 
     #Declare local instance variables
     c0_sub = None
-    c_deep = None
+    c_core = None
     c_kept = None
+    coast_band_px = float(options["coast_band_px"])
     conn_struct = np.ones((3, 3), dtype=np.int32)
-    dist_c = None
+    dist_core = None
+    dist_out = None
     dist_p = None
     final_indices = None
     h_sub_h = 0
@@ -512,7 +517,7 @@ class EquirectangularRasteriser:
 
     hx = host_indices % self.width
     hy = host_indices // self.width
-    pad = snap_radius_px + 3
+    pad = snap_radius_px + 4
     if int(hx.max() - hx.min()) > 3200:
       x0 = 0
       x1 = self.width
@@ -568,13 +573,21 @@ class EquirectangularRasteriser:
 
     c0_sub = host_sub & (~p0_sub)
     if np.any(c0_sub):
+      dist_out = distance_transform_edt(host_sub)
       dist_p = distance_transform_edt(~p0_sub)
-      c_deep = c0_sub & (~untouched_sub) & (dist_p > float(snap_radius_px))
-      if np.any(c_deep):
-        dist_c = distance_transform_edt(~c_deep)
-        c_kept = c0_sub & (untouched_sub | (dist_c <= float(snap_radius_px) + 0.35))
+      c_core = c0_sub & (~untouched_sub) & ((dist_p > float(snap_radius_px)) | (dist_out > coast_band_px))
+      if np.any(c_core):
+        dist_core = distance_transform_edt(~c_core)
+        c_kept = c0_sub & (untouched_sub | c_core | (dist_core <= coast_band_px + 0.5))
       else:
         c_kept = c0_sub & untouched_sub
+
+      if num_host_comps > 0 and np.any(untouched_sub):
+        tiny_islet_mask = untouched_sub & (comp_total[host_labels] <= min_speck_px) & (dist_p <= coast_band_px)
+        if np.any(tiny_islet_mask):
+          if dist_core is not None:
+            tiny_islet_mask = tiny_islet_mask & (dist_p < dist_core)
+          c_kept[tiny_islet_mask] = False
 
       non_island_kept = c_kept & (~untouched_sub)
       if max_pocket_px > 0 and np.any(non_island_kept):

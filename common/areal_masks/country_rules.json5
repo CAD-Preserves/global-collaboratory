@@ -34,19 +34,48 @@
     "aruba": {"era_type": "modern", "name": "Aruba", "source": {"adm0_a3": "ABW", "layer": "ne_admin0", "lonlat_fallback": [-69.9683, 12.5211]}},
     "australia": {"era_type": "modern", "name": "Australia", "source": {"iso3": "AUS", "layer": "ne_admin0"}},
     "austria": {"era_type": "modern", "name": "Austria", "source": {"iso3": "AUT", "layer": "ne_admin0"}},
+    "austria_bosnia_and_hercegovina": {
+      "era_type": "historical",
+      "name": "Bosnia and Herzegovina (Austro-Hungarian Condominium)",
+      "source": {"iso3": "BIH", "layer": "ne_admin0"},
+      "valid_years": [1878, 1918]
+    },
+    "austria_cisleithania": {
+      "era_type": "historical",
+      "name": "Cisleithania (Austrian Crownlands of the Habsburg Empire)",
+      "source": {
+        "extra_admin1": [
+          {"adm0_a3": "HRV", "names": ["Dubrovacko-Neretvanska", "Istarska", "Šibensko-Kninska", "Splitsko-Dalmatinska", "Zadarska"]},
+          {"adm0_a3": "ITA", "names": ["Bozen", "Gorizia", "Trento", "Trieste"]},
+          {"adm0_a3": "ROU", "names": ["Suceava"]}
+        ],
+        "extra_layers": [
+          {
+            "all_features": true,
+            "clip_to": ["poland"],
+            "exclude_countries": ["german_empire"],
+            "layer": "galicia_habsburg",
+            "snap_to_host": true
+          },
+          {
+            "exclude_countries": ["russia_1900"],
+            "intersect_coords": [[22.0, 47.5], [27.2, 47.5], [27.2, 51.2], [22.0, 51.2], [22.0, 47.5]],
+            "iso3": "UKR",
+            "layer": "ne_admin0",
+            "subtract_admin1": [{"adm0_a3": "UKR", "names": ["Zakarpattia"]}]
+          }
+        ],
+        "members": ["austria", "czech_republic", "slovenia"],
+        "subtract_admin1": [{"adm0_a3": "AUT", "names": ["Burgenland"]}],
+        "subtract_gadm": [{"gadm_iso3": "SVN", "gadm_level": 1, "names": ["Pomurska"]}],
+        "type": "union"
+      },
+      "valid_years": [1772, 1918]
+    },
     "austria_hungary": {
       "era_type": "historical",
       "name": "Austria-Hungary (1867-1918)",
-      "source": {
-        "extra_admin1": [
-          {"adm0_a3": "ITA", "names": ["Bozen", "Gorizia", "Trento", "Trieste"]},
-          {"adm0_a3": "POL", "names": ["Lesser Poland", "Subcarpathian"]},
-          {"adm0_a3": "ROU", "names": ["Alba", "Arad", "Bihor", "Bistrița-Năsăud", "Brașov", "Caraș-Severin", "Cluj", "Covasna", "Harghita", "Hunedoara", "Maramureș", "Mureș", "Sălaj", "Satu Mare", "Sibiu", "Suceava", "Timiș"]},
-          {"adm0_a3": "UKR", "names": ["Chernivtsi", "Ivano-Frankivs'k", "L'viv", "Ternopil'", "Zakarpattia"]}
-        ],
-        "members": ["austria", "bosnia_and_herzegovina", "croatia", "czech_republic", "hungary", "slovakia", "slovenia"],
-        "type": "union"
-      },
+      "source": {"members": ["austria_bosnia_and_hercegovina", "austria_cisleithania", "hungary_transleithania"], "type": "union"},
       "valid_years": [1867, 1918]
     },
     "azerbaijan": {"era_type": "modern", "name": "Azerbaijan", "source": {"iso3": "AZE", "layer": "ne_admin0"}},
@@ -58,6 +87,7 @@
     "belgium": {"era_type": "modern", "name": "Belgium", "source": {"iso3": "BEL", "layer": "ne_admin0"}},
     "belize": {"era_type": "modern", "name": "Belize", "source": {"iso3": "BLZ", "layer": "ne_admin0"}},
     "benin": {"era_type": "modern", "name": "Benin", "source": {"iso3": "BEN", "layer": "ne_admin0"}},
+    "berlin": {"era_type": "modern", "name": "Berlin", "source": {"adm0_a3": "DEU", "clip_to": ["germany"], "layer": "ne_admin1", "name": "Berlin"}},
     "bermuda": {"era_type": "modern", "name": "Bermuda", "source": {"adm0_a3": "BMU", "layer": "ne_admin0", "lonlat_fallback": [-64.7505, 32.3078]}},
     "bhutan": {"era_type": "modern", "name": "Bhutan", "source": {"iso3": "BTN", "layer": "ne_admin0"}},
     "bolivia": {"era_type": "modern", "name": "Bolivia", "source": {"iso3": "BOL", "layer": "ne_admin0"}},
@@ -75,6 +105,7 @@
       "name": "Colonial Brazil (c. 1630-1650 Captaincies)",
       "source": {
         "clip_to": ["brazil"],
+        "extra_admin1": [{"adm0_a3": "BRA", "names": ["Alagoas", "Espírito Santo", "Paraíba", "Rio de Janeiro", "Rio Grande do Norte", "Sergipe"]}],
         "layer": "phersu",
         "snap_to_host": true,
         "snapshot": "1630.01.01.json",
@@ -151,6 +182,16 @@
     "cook_islands": {"era_type": "modern", "name": "Cook Islands", "source": {"adm0_a3": "COK", "layer": "ne_admin0", "lonlat_fallback": [-159.7777, -21.2367]}},
     "costa_rica": {"era_type": "modern", "name": "Costa Rica", "source": {"iso3": "CRI", "layer": "ne_admin0"}},
     "croatia": {"era_type": "modern", "name": "Croatia", "source": {"iso3": "HRV", "layer": "ne_admin0"}},
+    "croatia_slavonia": {
+      "era_type": "historical",
+      "name": "Kingdom of Croatia-Slavonia",
+      "source": {
+        "base": "croatia",
+        "subtract_admin1": [{"adm0_a3": "HRV", "names": ["Dubrovacko-Neretvanska", "Istarska", "Šibensko-Kninska", "Splitsko-Dalmatinska", "Zadarska"]}],
+        "type": "difference"
+      },
+      "valid_years": [1868, 1918]
+    },
     "cuba": {"era_type": "modern", "name": "Cuba", "source": {"iso3": "CUB", "layer": "ne_admin0"}},
     "curacao": {"era_type": "modern", "name": "Curaçao", "source": {"adm0_a3": "CUW", "layer": "ne_admin0", "lonlat_fallback": [-68.99, 12.1696]}},
     "cyprus": {"era_type": "modern", "name": "Cyprus", "source": {"adm0_a3_list": ["CYP", "CYN"], "layer": "ne_admin0"}},
@@ -185,7 +226,30 @@
     "east_germany": {
       "era_type": "historical",
       "name": "German Democratic Republic (East Germany)",
-      "source": {"adm0_a3": "DEU", "clip_to": ["germany"], "layer": "ne_admin1", "names": ["Brandenburg", "Mecklenburg-Vorpommern", "Sachsen", "Sachsen-Anhalt", "Thüringen"], "snap_to_host": true},
+      "source": {
+        "adm0_a3": "DEU",
+        "clip_to": ["germany"],
+        "extra_layers": [
+          {
+            "clip_to": ["berlin"],
+            "coords": [
+              [13.385, 52.33],
+              [13.78, 52.33],
+              [13.78, 52.69],
+              [13.36, 52.69],
+              [13.40, 52.56],
+              [13.38, 52.52],
+              [13.45, 52.49],
+              [13.50, 52.45],
+              [13.52, 52.38],
+              [13.385, 52.33]
+            ],
+            "type": "polygon"
+          }
+        ],
+        "layer": "ne_admin1",
+        "names": ["Brandenburg", "Mecklenburg-Vorpommern", "Sachsen", "Sachsen-Anhalt", "Thüringen"]
+      },
       "valid_years": [1949, 1990]
     },
     "east_timor": {"era_type": "modern", "name": "East Timor (Timor-Leste)", "source": {"iso3": "TLS", "layer": "ne_admin0"}},
@@ -222,10 +286,18 @@
       "era_type": "historical",
       "name": "German Empire (1871-1918)",
       "source": {
+        "exclude_countries": ["austria", "czech_republic", "france_1900", "luxembourg", "netherlands", "switzerland"],
         "extra_admin1": [
           {"adm0_a3": "FRA", "names": ["Bas-Rhin", "Haut-Rhin", "Haute-Rhin", "Moselle"]},
-          {"adm0_a3": "POL", "names": ["Greater Poland", "Lower Silesian", "Lubusz", "Opole", "Pomeranian", "Silesian", "Warmian-Masurian", "West Pomeranian"]},
           {"adm0_a3": "RUS", "names": ["Kaliningrad"]}
+        ],
+        "extra_layers": [
+          {
+            "all_features": true,
+            "clip_to": ["belgium", "denmark", "germany", "lithuania", "poland", "russia"],
+            "layer": "germany_1914",
+            "snap_to_host": true
+          }
         ],
         "members": ["germany"],
         "type": "union"
@@ -266,6 +338,37 @@
     "honduras": {"era_type": "modern", "name": "Honduras", "source": {"iso3": "HND", "layer": "ne_admin0"}},
     "hong_kong": {"era_type": "modern", "name": "Hong Kong", "source": {"adm0_a3": "HKG", "layer": "ne_admin0"}},
     "hungary": {"era_type": "modern", "name": "Hungary", "source": {"iso3": "HUN", "layer": "ne_admin0"}},
+    "hungary_transleithania": {
+      "era_type": "historical",
+      "name": "Kingdom of Hungary (Transleithania)",
+      "source": {
+        "exclude_countries": ["austria_bosnia_and_hercegovina", "austria_cisleithania"],
+        "extra_admin1": [
+          {"adm0_a3": "AUT", "names": ["Burgenland"]},
+          {
+            "adm0_a3": "ROU",
+            "names": [
+              "Alba", "Arad", "Bihor", "Bistrița-Năsăud", "Brașov", "Caraș-Severin",
+              "Cluj", "Covasna", "Harghita", "Hunedoara", "Maramureș", "Mureș",
+              "Sălaj", "Satu Mare", "Sibiu", "Timiș"
+            ]
+          },
+          {"adm0_a3": "UKR", "names": ["Zakarpattia"]}
+        ],
+        "extra_gadm": [
+          {
+            "clip_to": ["serbia"],
+            "gadm_iso3": "SRB",
+            "gadm_level": 1,
+            "names": ["Južno-Bački", "Južno-Banatski", "Severno-Bački", "Severno-Banatski", "Srednje-Banatski", "Sremski", "Zapadno-Bački"]
+          },
+          {"clip_to": ["slovenia"], "gadm_iso3": "SVN", "gadm_level": 1, "names": ["Pomurska"]}
+        ],
+        "members": ["croatia_slavonia", "hungary", "slovakia"],
+        "type": "union"
+      },
+      "valid_years": [1750, 1918]
+    },
     "iceland": {"era_type": "modern", "name": "Iceland", "source": {"iso3": "ISL", "layer": "ne_admin0"}},
     "india": {"era_type": "modern", "name": "Republic of India", "source": {"iso3": "IND", "layer": "ne_admin0"}},
     "indochina": {
@@ -300,18 +403,26 @@
     "italy": {"era_type": "modern", "name": "Italy", "source": {"iso3": "ITA", "layer": "ne_admin0"}},
     "italy_1936": {
       "era_type": "historical",
-      "name": "Kingdom of Italy (1936 Census Borders incl. Venezia Giulia, Zara and Dodecanese)",
+      "name": "Kingdom of Italy (1936 Census Borders incl. Venezia Giulia, Fiume, Zara and Dodecanese)",
       "source": {
         "extra_admin1": [
-          {"adm0_a3": "HRV", "names": ["Istarska", "Zadarska"]},
+          {"adm0_a3": "HRV", "names": ["Istarska"]}
+        ],
+        "extra_gadm": [
           {
-            "adm0_a3": "SVN",
-            "names": [
-              "Ajdovščina", "Bovec", "Brda", "Cerkno", "Divaca", "Hrpelje-Kozina",
-              "Idrija", "Ilirska Bistrica", "Izola", "Kanal", "Kobarid", "Komen",
-              "Koper", "Miren-Kostanjevica", "Nova Goriška", "Piran", "Pivka",
-              "Postojna", "Sežana", "Šempeter-Vrtojba", "Tolmin", "Vipava"
-            ]
+            "clip_to": ["croatia"],
+            "gadm_iso3": "HRV",
+            "gadm_level": 2,
+            "names": ["Cres", "Lastovo", "MaliLošinj", "Opatija/Veprinac", "Rijeka", "Zadar"],
+            "names_1": ["Dubrovacko-Neretvanska", "Primorsko-Goranska", "Zadarska"],
+            "snap_to_host": false
+          },
+          {
+            "clip_to": ["slovenia"],
+            "gadm_iso3": "SVN",
+            "gadm_level": 1,
+            "names": ["Goriška", "Notranjsko-kraška", "Obalno-kraška"],
+            "snap_to_host": false
           }
         ],
         "members": ["dodecanese", "italy"],
@@ -339,8 +450,7 @@
         "adm0_a3": "IDN",
         "clip_to": ["indonesia"],
         "layer": "ne_admin1",
-        "names": ["Banten", "Jakarta Raya", "Jawa Barat", "Jawa Tengah", "Jawa Timur", "Yogyakarta"],
-        "snap_to_host": true
+        "names": ["Banten", "Jakarta Raya", "Jawa Barat", "Jawa Tengah", "Jawa Timur", "Yogyakarta"]
       }
     },
     "jordan": {"era_type": "modern", "name": "Jordan", "source": {"iso3": "JOR", "layer": "ne_admin0"}},
@@ -426,7 +536,7 @@
     "portuguese_goa": {
       "era_type": "historical",
       "name": "Portuguese Goa (Estado da Índia - Goa)",
-      "source": {"adm0_a3": "IND", "clip_to": ["india"], "layer": "ne_admin1", "names": ["Goa"], "snap_to_host": true},
+      "source": {"adm0_a3": "IND", "clip_to": ["india"], "layer": "ne_admin1", "names": ["Goa"]},
       "valid_years": [1510, 1961]
     },
     "portuguese_india": {
@@ -436,8 +546,7 @@
         "adm0_a3": "IND",
         "clip_to": ["india"],
         "layer": "ne_admin1",
-        "names": ["Dadra and Nagar Haveli and Daman and Diu", "Goa"],
-        "snap_to_host": true
+        "names": ["Dadra and Nagar Haveli and Daman and Diu", "Goa"]
       },
       "valid_years": [1510, 1961]
     },
@@ -475,6 +584,7 @@
       "name": "Russian Empire (1795 Fifth Revision Borders)",
       "source": {
         "clip_to": ["belarus", "estonia", "finland", "kazakhstan", "latvia", "lithuania", "russia", "ukraine"],
+        "exclude_countries": ["german_empire"],
         "layer": "russia_1897",
         "snap_to_host": true,
         "source_english": [
@@ -503,6 +613,7 @@
       "name": "Russian Empire (1897 Census: 50 European Governorates and Siberia)",
       "source": {
         "clip_to": ["belarus", "estonia", "latvia", "lithuania", "moldova", "russia", "ukraine"],
+        "exclude_countries": ["german_empire"],
         "layer": "russia_1897",
         "snap_to_host": true,
         "source_english": [
@@ -538,11 +649,11 @@
       "valid_years": [1815, 1917]
     },
     "rwanda": {"era_type": "modern", "name": "Rwanda", "source": {"iso3": "RWA", "layer": "ne_admin0"}},
-    "sabah": {"era_type": "historical", "name": "Sabah (British North Borneo and Labuan)", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Labuan", "Sabah"], "snap_to_host": true}},
+    "sabah": {"era_type": "historical", "name": "Sabah (British North Borneo and Labuan)", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Labuan", "Sabah"]}},
     "samoa": {"era_type": "modern", "name": "Samoa", "source": {"iso3": "WSM", "layer": "ne_admin0", "lonlat_fallback": [-172.1046, -13.759]}},
     "san_marino": {"era_type": "modern", "name": "San Marino", "source": {"iso3": "SMR", "layer": "ne_admin0", "lonlat_fallback": [12.4578, 43.9424]}},
     "sao_tome_and_principe": {"era_type": "modern", "name": "São Tomé and Príncipe", "source": {"iso3": "STP", "layer": "ne_admin0", "lonlat_fallback": [6.6131, 0.1864]}},
-    "sarawak": {"era_type": "historical", "name": "Sarawak", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Sarawak"], "snap_to_host": true}},
+    "sarawak": {"era_type": "historical", "name": "Sarawak", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Sarawak"]}},
     "saudi_arabia": {"era_type": "modern", "name": "Saudi Arabia", "source": {"iso3": "SAU", "layer": "ne_admin0"}},
     "scotland": {"era_type": "modern", "name": "Scotland", "source": {"layer": "ne_subunits", "su_a3": "SCT"}},
     "senegal": {"era_type": "modern", "name": "Senegal", "source": {"iso3": "SEN", "layer": "ne_admin0"}},
@@ -698,13 +809,18 @@
   // -- Constituent, sub-imperial and regional territories exported to subadmin_masks.json rather than country_masks.json --
   "subadmin_entities": [
     "alaska",
+    "austria_bosnia_and_hercegovina",
+    "austria_cisleithania",
+    "berlin",
     "british_borneo",
     "british_somaliland",
+    "croatia_slavonia",
     "dodecanese",
     "england",
     "england_and_wales",
     "great_britain",
     "hawaii",
+    "hungary_transleithania",
     "indonesia_outer_islands",
     "isle_of_man_and_channel_islands",
     "italian_somaliland",

@@ -93,7 +93,10 @@ class CountryMaskResolver:
     extra_members = source_obj.get("extra_members", [])
     inter_coords = source_obj.get("intersect_coords", [])
     layer_key = str(source_obj.get("layer") or "")
-    non_ne_layers = {"british_india_1948", "gadm", "phersu", "russia_1897", "uk_counties", "uk_historic_counties"}
+    non_ne_layers = {
+      "british_india_1948", "gadm", "galicia_habsburg", "germany_1914",
+      "phersu", "russia_1897", "uk_counties", "uk_historic_counties"
+    }
     parts_list = []
     should_snap = False
     sub_admin1 = source_obj.get("subtract_admin1", [])

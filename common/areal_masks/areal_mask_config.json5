@@ -1,6 +1,7 @@
 {
   // -- Topological frontier snapping parameters for pre-modern historical polygons --
   "frontier_snap": {
+    "coast_band_px": 3.0,
     "max_pocket_px": 48,
     "min_island_coverage_ratio": 0.25,
     "min_speck_px": 4,
@@ -50,6 +51,14 @@
         "archive_member_shp": "britishraj_atemporal.shp",
         "format": "shapefile_zip",
         "url": "https://raw.githubusercontent.com/neonhydroxide/hgis/main/britishindia_1948.zip"
+      },
+      "galicia_habsburg": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/ioggstream/europe-historical-geojson/master/data/geojson/map-Galizia.geojson"
+      },
+      "germany_1914": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/ioggstream/europe-historical-geojson/master/data/geojson/germany-1914.geojson"
       },
       "ne_admin0": {
         "format": "geojson",
