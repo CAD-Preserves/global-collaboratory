@@ -172,3 +172,4 @@ class ConfigLoader:
 
     #Return statement
     return parsed_obj if isinstance(parsed_obj, dict) else {}
+

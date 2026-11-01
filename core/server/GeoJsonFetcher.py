@@ -857,3 +857,4 @@ class GeoJsonFetcher:
         local_fh.write(orjson.dumps(fc_obj))
     except Exception as local_err:
       sys.stderr.write(f"Console error: failed writing GeoJSON {path}: {local_err}\n")
+

@@ -632,3 +632,4 @@ class AdminDivisionMaskResolver:
 
     #Return statement
     return (flat_idx, {"adm0_a3": adm0_code, "feature_count": len(feats), "layer": layer_type})
+

@@ -246,3 +246,4 @@ class CityMaskResolver:
 
     #Return statement
     return {"lat": 0.0, "lon": 0.0}
+
