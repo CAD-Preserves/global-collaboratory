@@ -1,0 +1,12 @@
+{
+  // -- Messages du pipeline de masques surfaciques Global Collaboratory (FR, GMT+0) --
+  "error_invalid_input": "Entrée invalide fournie à £1£ : £2£",
+  "error_missing_file": "Fichier requis introuvable au chemin : £1£",
+  "masks_cities_resolved": "£1£ localités urbaines canoniques résolues en coordonnées [lng, lat].",
+  "masks_countries_resolved": "£1£ pays canoniques modernes et historiques résolus.",
+  "masks_divisions_resolved": "£1£ divisions sous-administratives canoniques résolues sur £2£ ensembles de partition.",
+  "masks_initialised": "Pipeline de masques surfaciques WGS84 équirectangulaires initialisé (£1£x£2£, £3£).",
+  "masks_synthesised": "£1£ masques RVB provinciaux atomiques sans collision synthétisés sur provinces.png (£2£ pixels terrestres).",
+  "masks_table_lookup_exported": "£1£ correspondances de masques de tableaux et sous-séries exportées dans table_masks.json.",
+  "masks_verified_done": "£1£/£2£ jeux de données tabulaires et £3£ sous-séries vérifiés (£4£ manquants) en £5£ s."
+}

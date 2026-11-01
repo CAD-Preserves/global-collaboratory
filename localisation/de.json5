@@ -1,0 +1,12 @@
+{
+  // -- Statusmeldungen der Global-Collaboratory-Flächenmasken-Pipeline (DE, GMT+0) --
+  "error_invalid_input": "Ungültige Eingabe für £1£: £2£",
+  "error_missing_file": "Erforderliche Datei unter Pfad nicht gefunden: £1£",
+  "masks_cities_resolved": "£1£ kanonische städtische Orte in [lng, lat]-Koordinaten aufgelöst.",
+  "masks_countries_resolved": "£1£ kanonische moderne und historische Staaten aufgelöst.",
+  "masks_divisions_resolved": "£1£ kanonische untergeordnete Verwaltungseinheiten über £2£ Partitionssätze aufgelöst.",
+  "masks_initialised": "WGS84-Rektangular-Flächenmasken-Pipeline initialisiert (£1£x£2£, £3£).",
+  "masks_synthesised": "£1£ kollisionsfreie atomare Provinz-RGB-Masken auf provinces.png synthetisiert (£2£ Landpixel).",
+  "masks_table_lookup_exported": "£1£ Tabellen- und Unterserien-Maskenzuordnungen in table_masks.json exportiert.",
+  "masks_verified_done": "£1£/£2£ Tabellendatensätze und £3£ Unterserien (£4£ fehlend) in £5£ s verifiziert."
+}

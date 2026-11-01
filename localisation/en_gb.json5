@@ -1,0 +1,12 @@
+{
+  // -- Global Collaboratory areal mask pipeline messages (EN-GB, GMT+0) --
+  "error_invalid_input": "Invalid input provided to £1£: £2£",
+  "error_missing_file": "Required file was not found at path: £1£",
+  "masks_cities_resolved": "Resolved £1£ canonical urban localities to [lng, lat] coordinates.",
+  "masks_countries_resolved": "Resolved £1£ canonical modern and historical countries.",
+  "masks_divisions_resolved": "Resolved £1£ canonical subadministrative divisions across £2£ partition sets.",
+  "masks_initialised": "Initialised WGS84 Equirectangular areal mask pipeline (£1£x£2£, £3£).",
+  "masks_synthesised": "Synthesised £1£ collision-free atomic province RGB masks on provinces.png (£2£ land pixels).",
+  "masks_table_lookup_exported": "Exported £1£ table and sub-table mask mappings in table_masks.json.",
+  "masks_verified_done": "Verified £1£/£2£ tabular datasets and £3£ sub-series (£4£ unaccounted) in £5£ s."
+}

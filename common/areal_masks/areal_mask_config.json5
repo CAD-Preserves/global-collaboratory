@@ -1,5 +1,13 @@
 {
-  // -- WGS84 Equirectangular raster grid specification (5-arcminute / 0,083333 deg) --
+  // -- Topological frontier snapping parameters for pre-modern historical polygons --
+  "frontier_snap": {
+    "max_pocket_px": 48,
+    "min_island_coverage_ratio": 0.25,
+    "min_speck_px": 4,
+    "snap_radius_px": 5
+  },
+
+  // -- WGS84 Equirectangular raster specification (5-arcminute / 0,083333 deg grid) --
   "grid": {
     "bbox_wgs84": [-180.0, -90.0, 180.0, 90.0],
     "crs": "EPSG:4326",
@@ -10,15 +18,7 @@
     "width": 4320
   },
 
-  // -- Input, output and cache paths --
-  "paths": {
-    "cache_dir": "tests/geo_cache",
-    "data_dir": "data",
-    "input_json_dir": "output/json",
-    "output_dir": "output/areal_masks"
-  },
-
-  // -- Output deliverables in output/areal_masks/ --
+  // -- Output PNG raster and flat JSON mask maps (5 deliverables total) --
   "outputs": {
     "city_masks_json": "city_masks.json",
     "country_masks_json": "country_masks.json",
@@ -27,14 +27,66 @@
     "table_masks_json": "table_masks.json"
   },
 
-  // -- Online geospatial vector source endpoints --
-  "sources": {
-    "ne_admin0": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson",
-    "ne_admin1": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson",
-    "ne_units": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_map_units.geojson"
+  // -- Deterministic Zobrist and RGB palette seed --
+  "palette_seed": 104729,
+
+  // -- Input, output, localisation and temporary cache paths --
+  "paths": {
+    "cache_dir": "tests/geo_cache",
+    "data_dir": "data",
+    "harmonised_json_dir": "output/json/sectoral_harmonised",
+    "input_json_dir": "output/json",
+    "localisation_dir": "localisation",
+    "output_dir": "output/areal_masks",
+    "phersu_dir": "F:/scrapes/phersu/geojson",
+    "raw_json_dir": "output/json/raw_tables"
   },
 
-  // -- Synthesis palette seed --
-  "palette_seed": 104729
+  // -- Online geospatial vector and geocoding endpoints --
+  "sources": {
+    "base_layers": {
+      "british_india_1948": {
+        "archive_member_dbf": "britishraj_atemporal.dbf",
+        "archive_member_shp": "britishraj_atemporal.shp",
+        "format": "shapefile_zip",
+        "url": "https://raw.githubusercontent.com/neonhydroxide/hgis/main/britishindia_1948.zip"
+      },
+      "ne_admin0": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson"
+      },
+      "ne_admin1": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson"
+      },
+      "ne_map_units": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_map_units.geojson"
+      },
+      "ne_subunits": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_map_subunits.geojson"
+      },
+      "russia_1897": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/ivseliv/senat/main/lex/data/province-boundaries-1897.json"
+      },
+      "uk_counties": {
+        "format": "geojson",
+        "url": "https://raw.githubusercontent.com/evansd/uk-ceremonial-counties/master/uk-ceremonial-counties.geojson"
+      },
+      "uk_historic_counties": {
+        "archive_member_dbf": "UKDefinitionA.dbf",
+        "archive_member_shp": "UKDefinitionA.shp",
+        "format": "shapefile_zip",
+        "url": "https://www.county-borders.co.uk/UKDefinitionA_WG84_Simplified.zip"
+      }
+    },
+    "gadm_template": "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_£1£_£2£.json",
+    "gadm_zip_template": "https://geodata.ucdavis.edu/gadm/gadm4.1/json/gadm41_£1£_£2£.json.zip",
+    "nominatim_search_url": "https://nominatim.openstreetmap.org/search",
+    "photon_api_url": "https://photon.komoot.io/api/",
+    "user_agent": "GlobalCollaboratoryArealMasks/2.0 (IISH-Global-Collaboratory-WGS84-Areal-Masks)",
+    "wikipedia_api_url": "https://en.wikipedia.org/w/api.php"
+  }
 }
-

@@ -1,27 +1,34 @@
-"""@brief WGS84 Equirectangular scanline polygon rasteriser and lossless PNG exporter."""
+"""@brief WGS84 Equirectangular scanline polygon rasteriser, morphological frontier snapper and lossless PNG exporter."""
 
 import math
 import os
 import sys
 import numpy as np
 from PIL import Image
+from scipy.ndimage import distance_transform_edt, label
 from shapely.geometry import MultiPolygon, Point, Polygon, box, shape
 from shapely.ops import unary_union
 
 
 class EquirectangularRasteriser:
-  """@brief Scanline-rasterises WGS84 GeoJSON/Shapely geometries onto a 4320x2160 Equirectangular grid."""
+  """@brief Scanline-rasterises WGS84 GeoJSON/Shapely geometries onto a 4320x2160 Equirectangular grid with zero stray edge pixels."""
 
-  def __init__ (self, arg1_grid_config_obj=None):
+  def __init__ (self, arg1_grid_config_obj=None, arg2_frontier_config_obj=None):
     """
-    @brief Initialise EquirectangularRasteriser with target pixel dimensions and float64 pixel-centre lookup tables.
+    @brief Initialise EquirectangularRasteriser with target pixel dimensions, lookup tables and frontier-snapping defaults.
     @param arg1_grid_config_obj Grid configuration dictionary from areal_mask_config.json5.
+    @param arg2_frontier_config_obj Optional frontier_snap configuration dictionary from areal_mask_config.json5.
     """
     #Convert from parameters
     grid_config_obj = arg1_grid_config_obj if isinstance(arg1_grid_config_obj, dict) else {}
+    frontier_config_obj = arg2_frontier_config_obj if isinstance(arg2_frontier_config_obj, dict) else {}
 
     #Declare local instance variables
     self.crs = str(grid_config_obj.get("crs", "EPSG:4326"))
+    self.default_max_pocket_px = int(frontier_config_obj.get("max_pocket_px", 48))
+    self.default_min_island_ratio = float(frontier_config_obj.get("min_island_coverage_ratio", 0.25))
+    self.default_min_speck_px = int(frontier_config_obj.get("min_speck_px", 4))
+    self.default_snap_radius_px = int(frontier_config_obj.get("snap_radius_px", 5))
     self.height = int(grid_config_obj.get("height", 2160))
     self.pixels_per_degree = float(grid_config_obj.get("pixels_per_degree", 12.0))
     self.width = self.getConfiguredWidth(grid_config_obj)
@@ -32,8 +39,8 @@ class EquirectangularRasteriser:
 
   def A_rasteriseGeometry (self, arg1_geometry_obj, arg2_options=None):
     """
-    @brief Step A: Scanline-rasterise a GeoJSON dict, Shapely geometry, or list of geometries to sorted flat pixel indices.
-    @param arg1_geometry_obj GeoJSON geometry dict, Feature dict, Shapely geometry, or list thereof.
+    @brief Step A: Scanline-rasterise a GeoJSON dict, Shapely geometry or list of geometries to sorted flat pixel indices.
+    @param arg1_geometry_obj GeoJSON geometry dict, Feature dict, Shapely geometry or list thereof.
     @param arg2_options Optional dictionary with fallback_lonlat and ensure_min_pixel (default True).
     @return Sorted 1D numpy int32 array of flat pixel indices (y*width + x).
     """
@@ -60,7 +67,8 @@ class EquirectangularRasteriser:
     if not poly_list:
       if fallback_pt is not None and len(fallback_pt) >= 2:
         return self.lonLatToFlatIndexArray(float(fallback_pt[0]), float(fallback_pt[1]))
-      sys.stderr.write("Console error: empty geometry passed to A_rasteriseGeometry.\n")
+      if options["ensure_min_pixel"]:
+        sys.stderr.write("Console error: empty geometry passed to A_rasteriseGeometry.\n")
       return empty_array
 
     for i in range(len(poly_list)):
@@ -165,9 +173,9 @@ class EquirectangularRasteriser:
 
   def computeMaskMetrics (self, arg1_flat_indices):
     """
-    @brief Compute pixel count, pixel bounding box, WGS84 bounding box, and WGS84 centroid from flat pixel indices.
+    @brief Compute pixel count, pixel bounding box, WGS84 bounding box and WGS84 centroid from flat pixel indices.
     @param arg1_flat_indices Sorted 1D numpy int32 array of flat pixel indices.
-    @return Dictionary containing pixel_count, bbox_px, bbox_wgs84, and centroid_wgs84.
+    @return Dictionary containing pixel_count, bbox_px, bbox_wgs84 and centroid_wgs84.
     """
     #Convert from parameters
     flat_indices = arg1_flat_indices
@@ -219,7 +227,7 @@ class EquirectangularRasteriser:
 
   def extractPolygons (self, arg1_geometry_obj):
     """
-    @brief Recursively unpack GeoJSON dicts, Feature dicts, or Shapely geometries into valid Shapely Polygons.
+    @brief Recursively unpack GeoJSON dicts, Feature dicts or Shapely geometries into valid Shapely Polygons.
     @param arg1_geometry_obj Input geometry container.
     @return List of Shapely Polygon objects.
     """
@@ -347,41 +355,6 @@ class EquirectangularRasteriser:
     return self.A_rasteriseGeometry(bbox_poly, {"fallback_lonlat": [0.5*(west + east), 0.5*(south + north)]})
 
 
-  def rasterisePointDisc (self, arg1_lon, arg2_lat, arg3_radius_deg=0.09):
-    """
-    @brief Rasterise an equirectangular urban disc centred at (lon, lat) with latitude cosine compensation.
-    @param arg1_lon Longitude in degrees [-180, 180].
-    @param arg2_lat Latitude in degrees [-90, 90].
-    @param arg3_radius_deg Angular radius in degrees of latitude (default 0,09 deg ~ 10 km).
-    @return Sorted 1D numpy int32 array of flat pixel indices (guaranteed >= 1 pixel).
-    """
-    #Convert from parameters
-    lon = float(arg1_lon)
-    lat = float(arg2_lat)
-    radius_deg = max(0.02, float(arg3_radius_deg))
-
-    #Declare local instance variables
-    angles = np.linspace(0.0, 2.0*math.pi, 24, endpoint=False)
-    cos_lat = max(0.2, math.cos(math.radians(max(-80.0, min(80.0, lat)))))
-    disc_indices = None
-    lon_radius = min(3.0, radius_deg/cos_lat)
-    ring_coords = []
-
-    for i in range(len(angles)):
-      local_ang = float(angles[i])
-      local_x = max(-179.999, min(179.999, lon + lon_radius*math.cos(local_ang)))
-      local_y = max(-89.999, min(89.999, lat + radius_deg*math.sin(local_ang)))
-      ring_coords.append((local_x, local_y))
-    ring_coords.append(ring_coords[0])
-
-    disc_indices = self.A_rasteriseGeometry(Polygon(ring_coords), {"fallback_lonlat": [lon, lat]})
-    if disc_indices.size == 0:
-      disc_indices = self.lonLatToFlatIndexArray(lon, lat)
-
-    #Return statement
-    return np.unique(np.concatenate([disc_indices, self.lonLatToFlatIndexArray(lon, lat)]))
-
-
   def rasteriseSinglePolygon (self, arg1_polygon):
     """
     @brief Scanline-rasterise a single non-dateline-crossing Shapely Polygon via exact half-open float64 pixel-centre containment.
@@ -474,12 +447,167 @@ class EquirectangularRasteriser:
     return np.concatenate(row_spans) if row_spans else empty_array
 
 
+  def snapHistoricalFrontierToHost (self, arg1_raw_indices, arg2_host_indices, arg3_options=None):
+    """
+    @brief Snap a coarse historical or GADM mask onto an exact Natural Earth 10m host mask, eliminating coastal shortfall strips and graze specks while preserving true inland frontiers.
+    @param arg1_raw_indices Sorted 1D int32 flat pixel array of the raw historical/regional polygon.
+    @param arg2_host_indices Sorted 1D int32 flat pixel array of the canonical Natural Earth 10m host countries.
+    @param arg3_options Optional dictionary overriding snap_radius_px, max_pocket_px, min_speck_px or min_island_coverage_ratio.
+    @return Sorted 1D int32 flat pixel array strictly within arg2_host_indices with crisp coastlines and borders.
+    """
+    #Convert from parameters
+    raw_indices = arg1_raw_indices
+    host_indices = arg2_host_indices
+    options = arg3_options if isinstance(arg3_options, dict) else {}
+
+    #Initialise options
+    if "max_pocket_px" not in options:
+      options["max_pocket_px"] = self.default_max_pocket_px
+    if "min_island_coverage_ratio" not in options:
+      options["min_island_coverage_ratio"] = self.default_min_island_ratio
+    if "min_speck_px" not in options:
+      options["min_speck_px"] = self.default_min_speck_px
+    if "snap_radius_px" not in options:
+      options["snap_radius_px"] = self.default_snap_radius_px
+
+    #Declare local instance variables
+    c0_sub = None
+    c_deep = None
+    c_kept = None
+    conn_struct = np.ones((3, 3), dtype=np.int32)
+    dist_c = None
+    dist_p = None
+    final_indices = None
+    h_sub_h = 0
+    h_sub_w = 0
+    host_labels = None
+    host_sub = None
+    hx = None
+    hy = None
+    max_pocket_px = int(options["max_pocket_px"])
+    min_island_ratio = float(options["min_island_coverage_ratio"])
+    min_speck_px = int(options["min_speck_px"])
+    num_host_comps = 0
+    num_pocket_comps = 0
+    p0_clipped = None
+    p0_sub = None
+    p_final_sub = None
+    pad = 0
+    pocket_labels = None
+    snap_radius_px = max(1, int(options["snap_radius_px"]))
+    untouched_sub = None
+    x0 = 0
+    x1 = 0
+    y0 = 0
+    y1 = 0
+
+    if not isinstance(raw_indices, np.ndarray) or raw_indices.size == 0:
+      return np.zeros(0, dtype=np.int32)
+    if not isinstance(host_indices, np.ndarray) or host_indices.size == 0:
+      return raw_indices
+
+    p0_clipped = np.intersect1d(raw_indices, host_indices, assume_unique=True)
+    if p0_clipped.size == 0:
+      return self.clipIndicesWithFallback(raw_indices, host_indices)
+
+    hx = host_indices % self.width
+    hy = host_indices // self.width
+    pad = snap_radius_px + 3
+    if int(hx.max() - hx.min()) > 3200:
+      x0 = 0
+      x1 = self.width
+    else:
+      x0 = max(0, int(hx.min()) - pad)
+      x1 = min(self.width, int(hx.max()) + 1 + pad)
+    y0 = max(0, int(hy.min()) - pad)
+    y1 = min(self.height, int(hy.max()) + 1 + pad)
+
+    h_sub_h = y1 - y0
+    h_sub_w = x1 - x0
+    host_sub = np.zeros((h_sub_h, h_sub_w), dtype=bool)
+    p0_sub = np.zeros((h_sub_h, h_sub_w), dtype=bool)
+    host_sub[hy - y0, hx - x0] = True
+    p0_sub[(p0_clipped // self.width) - y0, (p0_clipped % self.width) - x0] = True
+
+    host_labels, num_host_comps = label(host_sub, structure=conn_struct)
+    if num_host_comps > 0:
+      comp_total = np.bincount(host_labels.ravel(), minlength=num_host_comps + 1)
+      comp_overlap = np.bincount(host_labels[p0_sub].ravel(), minlength=num_host_comps + 1)
+
+      speck_ids = np.flatnonzero(
+        (comp_overlap > 0)
+        & (comp_overlap <= min_speck_px)
+        & (comp_overlap < min_island_ratio*np.maximum(1, comp_total))
+      )
+      if speck_ids.size > 0:
+        speck_lut = np.zeros(num_host_comps + 1, dtype=bool)
+        speck_lut[speck_ids] = True
+        p0_sub[speck_lut[host_labels]] = False
+        comp_overlap[speck_ids] = 0
+
+      absorb_ids = np.flatnonzero(
+        (comp_overlap > min_speck_px)
+        & (comp_overlap >= 0.70*np.maximum(1, comp_total))
+        & ((comp_total - comp_overlap) <= max_pocket_px)
+      )
+      if absorb_ids.size > 0:
+        absorb_lut = np.zeros(num_host_comps + 1, dtype=bool)
+        absorb_lut[absorb_ids] = True
+        p0_sub[absorb_lut[host_labels]] = True
+        comp_overlap[absorb_ids] = comp_total[absorb_ids]
+
+      untouched_lut = np.zeros(num_host_comps + 1, dtype=bool)
+      untouched_lut[comp_overlap == 0] = True
+      untouched_lut[0] = False
+      untouched_sub = untouched_lut[host_labels]
+    else:
+      untouched_sub = np.zeros((h_sub_h, h_sub_w), dtype=bool)
+
+    if not np.any(p0_sub):
+      return self.clipIndicesWithFallback(raw_indices, host_indices)
+
+    c0_sub = host_sub & (~p0_sub)
+    if np.any(c0_sub):
+      dist_p = distance_transform_edt(~p0_sub)
+      c_deep = c0_sub & (~untouched_sub) & (dist_p > float(snap_radius_px))
+      if np.any(c_deep):
+        dist_c = distance_transform_edt(~c_deep)
+        c_kept = c0_sub & (untouched_sub | (dist_c <= float(snap_radius_px) + 0.35))
+      else:
+        c_kept = c0_sub & untouched_sub
+
+      non_island_kept = c_kept & (~untouched_sub)
+      if max_pocket_px > 0 and np.any(non_island_kept):
+        pocket_labels, num_pocket_comps = label(non_island_kept, structure=conn_struct)
+        if num_pocket_comps > 0:
+          pocket_sizes = np.bincount(pocket_labels.ravel(), minlength=num_pocket_comps + 1)
+          small_pockets = np.flatnonzero((pocket_sizes > 0) & (pocket_sizes < max_pocket_px))
+          small_pockets = small_pockets[small_pockets > 0]
+          if small_pockets.size > 0:
+            drop_lut = np.zeros(num_pocket_comps + 1, dtype=bool)
+            drop_lut[small_pockets] = True
+            c_kept[drop_lut[pocket_labels]] = False
+    else:
+      c_kept = np.zeros((h_sub_h, h_sub_w), dtype=bool)
+
+    p_final_sub = host_sub & (~c_kept)
+    fy, fx = np.nonzero(p_final_sub)
+    if fy.size == 0:
+      return self.clipIndicesWithFallback(raw_indices, host_indices)
+
+    final_indices = ((fy.astype(np.int32) + y0)*self.width + (fx.astype(np.int32) + x0)).astype(np.int32)
+    final_indices.sort()
+
+    #Return statement
+    return final_indices
+
+
   def snapPartitionToTargetMask (self, arg1_members_map, arg2_target_indices, arg3_options=None):
     """
     @brief Clip a map of sub-division masks to a canonical parent mask, optionally enforcing pairwise disjointness and filling uncovered coastal pixels.
     @param arg1_members_map Dictionary mapping entity_id -> sorted 1D int32 flat pixel array.
     @param arg2_target_indices Sorted 1D int32 flat pixel array of the canonical parent territory.
-    @param arg3_options Optional dictionary with disjoint (default False), fill_uncovered (default True), and priority_keys (default []).
+    @param arg3_options Optional dictionary with disjoint (default False), fill_uncovered (default True) and priority_keys (default []).
     @return Dictionary mapping entity_id -> snapped sorted 1D int32 flat pixel array.
     """
     #Convert from parameters

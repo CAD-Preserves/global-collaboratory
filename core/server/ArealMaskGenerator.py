@@ -2,6 +2,7 @@
 
 Synthesises 4320x2160 WGS84 Equirectangular areal masks for top-level countries and historical regions.
 Produces provinces.png, country_masks.json, table_masks.json, subadmin_masks.json, and city_masks.json.
+Uses F:/scrapes/phersu/geojson for authoritative historical territory definitions.
 """
 
 import json
@@ -18,7 +19,7 @@ import numpy as np
 from PIL import Image
 import pyjson5
 import requests
-from shapely.geometry import shape
+from shapely.geometry import box, shape
 from shapely.ops import unary_union
 
 from core.server.EquirectangularRasteriser import EquirectangularRasteriser
@@ -52,6 +53,7 @@ class ArealMaskGenerator:
     self.input_json_dir = os.path.join(self.root_dir, self.config_obj.get("paths", {}).get("input_json_dir", "output/json"))
     self.output_dir = os.path.join(self.root_dir, self.config_obj.get("paths", {}).get("output_dir", "output/areal_masks"))
     self.outputs_cfg = self.config_obj.get("outputs", {})
+    self.phersu_dir = os.path.abspath(self.config_obj.get("paths", {}).get("phersu_dir", "F:/scrapes/phersu/geojson"))
     self.rasteriser = EquirectangularRasteriser(self.config_obj.get("grid", {}))
 
     os.makedirs(self.cache_dir, exist_ok=True)
@@ -94,42 +96,57 @@ class ArealMaskGenerator:
     return let_response.json()
 
 
-  def b_extract_named_geometry (self, arg1_fc, arg2_names):
-    """Extracts and unions geometries of features matching specified name strings.
+  def b_extract_phersu_geom (self, arg1_file_name, arg2_target_states, arg3_clip_box=None):
+    """Extracts and unions geometries of matching states from a Phersu historical GeoJSON file.
 
-    @param {dict} arg1_fc - GeoJSON FeatureCollection.
-    @param {set|list} arg2_names - Collection of matching feature name strings.
+    @param {str} arg1_file_name - Phersu GeoJSON filename (e.g. '1650.01.01.json').
+    @param {list} arg2_target_states - List of state names to extract.
+    @param {shapely.geometry.box|None} [arg3_clip_box=None] - Optional bounding box for spatial filtering.
     @return {shapely.geometry.base.BaseGeometry|None} Unioned geometry or None.
     """
     # Convert from parameters
-    let_fc = arg1_fc if isinstance(arg1_fc, dict) else {}
-    let_names = set(arg2_names) if arg2_names else set()
+    let_clip_box = arg3_clip_box
+    let_file_name = str(arg1_file_name or "").strip()
+    let_target_states = set(arg2_target_states) if arg2_target_states else set()
 
     # Declare local instance variables
-    let_matching_parts = []
-    let_name = ""
-    let_props = {}
-
-    # Function body
-    for feature in let_fc.get("features", []):
-      let_props = feature.get("properties", {})
-      let_name = let_props.get("NAME") or let_props.get("name")
-      if let_name and let_name in let_names:
-        let_matching_parts.append(shape(feature["geometry"]))
+    let_file_path = os.path.join(self.phersu_dir, let_file_name)
+    let_geom = None
+    let_parts = []
+    let_state_name = ""
 
     # Guard clause
-    if not let_matching_parts:
+    if not os.path.exists(let_file_path):
+      print(f"Warning: Phersu file not found at {let_file_path}")
+      # Return statement
+      return None
+
+    # Function body
+    with open(let_file_path, "r", encoding="utf-8") as let_file_stream:
+      let_fc = json.load(let_file_stream)
+
+    for feature in let_fc.get("features", []):
+      let_state_name = feature.get("properties", {}).get("state", "").replace("\n", " ").strip()
+      if let_state_name in let_target_states:
+        let_geom = shape(feature["geometry"])
+        if let_clip_box:
+          let_geom = let_geom.intersection(let_clip_box)
+        if not let_geom.is_empty:
+          let_parts.append(let_geom)
+
+    # Guard clause
+    if not let_parts:
       # Return statement
       return None
 
     # Return statement
-    return unary_union(let_matching_parts)
+    return unary_union(let_parts)
 
 
   def c_build_base_entities (self):
     """Constructs modern sovereign entities and constituent country splits.
 
-    Includes UK constituents, Italy (Veneto vs Rest), India (Goa vs Rest),
+    Includes UK constituents, Italy (Venice/Veneto vs Rest), India (Goa vs Rest),
     Indonesia (Java vs Outer), and Malaysia (Malaya vs Borneo).
 
     @return {list} List of entity dictionaries with 'entity_id' and 'flat_indices'.
@@ -240,11 +257,12 @@ class ArealMaskGenerator:
 
 
   def d_build_historical_entities (self, arg1_base_entities_array):
-    """Extracts and rasterises era-specific historical geometries.
+    """Extracts and rasterises historical geometries directly from F:/scrapes/phersu/geojson.
 
-    Incorporates Brazil 1650 (coastal captaincies), Brazil 1800 (Viceroyalty),
-    USA 1800, Russia 1500/1650/1800/1900, Venice 1500/1650/1800, Bolivia 1900,
-    France 1900, Greece 1920, and British Raj 1900.
+    Captures Brazil 1650 (coastal captaincies), Brazil 1800 (viceroyalty),
+    USA 1800 (16 states + NW/SW territories), France 1900 (Third Republic),
+    Bolivia 1900, British India 1900, Greece 1920 (Treaty of Sevres),
+    Russia 1500 (Moscow), Russia 1650 (Muscovy), Russian Empire 1800/1900, and Venice.
 
     @param {list} arg1_base_entities_array - Base modern entities list.
     @return {list} List of historical entity dictionaries.
@@ -256,176 +274,143 @@ class ArealMaskGenerator:
     let_b1650_geom = None
     let_b1800_geom = None
     let_bol1900_geom = None
-    let_brazil_land_idx = np.zeros(0, dtype=np.int32)
+    let_brazil_modern_idx = np.zeros(0, dtype=np.int32)
     let_fra1900_geom = None
+    let_france_modern_idx = np.zeros(0, dtype=np.int32)
     let_gre1920_geom = None
     let_historical_entities = []
-    let_raj1900_geom = None
+    let_india_box = box(60, 5, 100, 38)
+    let_master_land_idx = np.zeros(0, dtype=np.int32)
+    let_raj_parts = []
     let_rus1500_geom = None
     let_rus1650_geom = None
     let_rus1800_geom = None
     let_rus1900_geom = None
+    let_sa_box = box(-80, -35, -30, 10)
     let_usa1800_geom = None
-    let_usa_land_idx = np.zeros(0, dtype=np.int32)
+    let_usa_modern_idx = np.zeros(0, dtype=np.int32)
     let_v1500_geom = None
     let_v1650_geom = None
-    let_v1800_geom = None
-    let_w1500 = self.a_fetch_or_load_layer("world_1500")
-    let_w1650 = self.a_fetch_or_load_layer("world_1650")
-    let_w1800 = self.a_fetch_or_load_layer("world_1800")
-    let_w1900 = self.a_fetch_or_load_layer("world_1900")
-    let_w1920 = self.a_fetch_or_load_layer("world_1920")
 
-    # Find land index references for clipping
+    # Function body
+    let_master_land_idx = np.unique(np.concatenate([e["flat_indices"] for e in let_base_entities]))
+
     for entity in let_base_entities:
       if entity["entity_id"] == "brazil":
-        let_brazil_land_idx = entity["flat_indices"]
+        let_brazil_modern_idx = entity["flat_indices"]
       if entity["entity_id"] == "united_states_of_america":
-        let_usa_land_idx = entity["flat_indices"]
+        let_usa_modern_idx = entity["flat_indices"]
+      if entity["entity_id"] == "france":
+        let_france_modern_idx = entity["flat_indices"]
 
-    # 1. Brazil 1650: Portuguese Brazil + Dutch Brazil (clipped to land)
-    let_b1650_geom = self.b_extract_named_geometry(let_w1650, ["Portuguese Brazil", "Dutch Brazil"])
+    # 1. Brazil 1650: Portuguese Brazil + Dutch West India Company
+    let_b1650_geom = self.b_extract_phersu_geom("1650.01.01.json", ["Portuguese Brazil", "Dutch West India Company"], let_sa_box)
     if let_b1650_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_b1650_geom)
-      if let_brazil_land_idx.size > 0:
-        let_idx = np.intersect1d(let_idx, let_brazil_land_idx)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "brazil_1650", "flat_indices": let_idx})
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_b1650_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_brazil_modern_idx)
+      let_historical_entities.append({"entity_id": "brazil_1650", "flat_indices": let_idx})
 
-    # 2. Brazil 1800: Viceroyalty of Brazil (clipped to land)
-    let_b1800_geom = self.b_extract_named_geometry(let_w1800, ["Viceroyalty of Brazil"])
+    # 2. Brazil 1800: Portuguese Brazil in South America
+    let_b1800_geom = self.b_extract_phersu_geom("1800.01.01.json", ["Portuguese Brazil"], let_sa_box)
     if let_b1800_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_b1800_geom)
-      if let_brazil_land_idx.size > 0:
-        let_idx = np.intersect1d(let_idx, let_brazil_land_idx)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "brazil_1800", "flat_indices": let_idx})
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_b1800_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_brazil_modern_idx)
+      let_historical_entities.append({"entity_id": "brazil_1800", "flat_indices": let_idx})
 
-    # 3. United States 1800: United States of America 1800 (clipped to land)
-    let_usa1800_geom = self.b_extract_named_geometry(let_w1800, ["United States of America"])
+    # 3. United States 1800: USA in 1800
+    let_usa1800_geom = self.b_extract_phersu_geom("1800.01.01.json", ["USA"])
     if let_usa1800_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_usa1800_geom)
-      if let_usa_land_idx.size > 0:
-        let_idx = np.intersect1d(let_idx, let_usa_land_idx)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "united_states_1800", "flat_indices": let_idx})
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_usa1800_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_usa_modern_idx)
+      let_historical_entities.append({"entity_id": "united_states_1800", "flat_indices": let_idx})
 
-    # 4. Russia historical progression: Moscow 1500, Muscovy 1650, Russian Empire 1800 & 1900
-    let_rus1500_geom = self.b_extract_named_geometry(let_w1500, ["Grand Duchy of Moscow"])
-    if let_rus1500_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_rus1500_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "russia_1500", "flat_indices": let_idx})
-
-    let_rus1650_geom = self.b_extract_named_geometry(let_w1650, ["Tsardom of Muscovy"])
-    if let_rus1650_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_rus1650_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "russia_1650", "flat_indices": let_idx})
-
-    let_rus1800_geom = self.b_extract_named_geometry(let_w1800, ["Russian Empire"])
-    if let_rus1800_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_rus1800_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "russia_1800", "flat_indices": let_idx})
-
-    let_rus1900_geom = self.b_extract_named_geometry(let_w1900, ["Russian Empire"])
-    if let_rus1900_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_rus1900_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "russia_1900", "flat_indices": let_idx})
-
-    # 5. Venice historical progression: 1500, 1650, 1800
-    let_v1500_geom = self.b_extract_named_geometry(let_w1500, ["Venice"])
-    if let_v1500_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_v1500_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "venice_1500", "flat_indices": let_idx})
-
-    let_v1650_geom = self.b_extract_named_geometry(let_w1650, ["Venice"])
-    if let_v1650_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_v1650_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "venice_1650", "flat_indices": let_idx})
-
-    let_v1800_geom = self.b_extract_named_geometry(let_w1800, ["Venetia"])
-    if let_v1800_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_v1800_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "venice_1800", "flat_indices": let_idx})
-
-    # 6. Bolivia 1900 (pre-1903 Treaty of Petropolis, includes Acre)
-    let_bol1900_geom = self.b_extract_named_geometry(let_w1900, ["Bolivia"])
-    if let_bol1900_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_bol1900_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "bolivia_1900", "flat_indices": let_idx})
-
-    # 7. France 1900 (without Alsace-Lorraine)
-    let_fra1900_geom = self.b_extract_named_geometry(let_w1900, ["France"])
+    # 4. France 1900: French Third Republic (without Alsace-Lorraine)
+    let_fra1900_geom = self.b_extract_phersu_geom("1900.01.01.json", ["French Third Republic"])
     if let_fra1900_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_fra1900_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "france_1900", "flat_indices": let_idx})
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_fra1900_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_france_modern_idx)
+      let_historical_entities.append({"entity_id": "france_1900", "flat_indices": let_idx})
 
-    # 8. Greece 1920 (Treaty of Sevres borders)
-    let_gre1920_geom = self.b_extract_named_geometry(let_w1920, ["Greece"])
-    if let_gre1920_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_gre1920_geom)
-      if let_idx.size > 0:
-        let_historical_entities.append({"entity_id": "greece_1920", "flat_indices": let_idx})
+    # 5. Bolivia 1900: Republic of Bolivia (including Acre)
+    let_bol1900_geom = self.b_extract_phersu_geom("1900.01.01.json", ["Republic of Bolivia"])
+    if let_bol1900_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_bol1900_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "bolivia_1900", "flat_indices": let_idx})
 
-    # 9. India 1900: British Raj
-    let_raj1900_geom = self.b_extract_named_geometry(let_w1900, ["British Raj"])
-    if let_raj1900_geom:
-      let_idx = self.rasteriser.A_rasteriseGeometry(let_raj1900_geom)
-      if let_idx.size > 0:
+    # 6. British India 1900: British India + Princely States
+    let_p1900 = os.path.join(self.phersu_dir, "1900.01.01.json")
+    if os.path.exists(let_p1900):
+      with open(let_p1900, "r", encoding="utf-8") as let_fs:
+        let_d1900 = json.load(let_fs)
+      for feature in let_d1900.get("features", []):
+        let_s = feature.get("properties", {}).get("state", "").replace("\n", " ")
+        if "British India" in let_s or "(Princely State)" in let_s:
+          let_g = shape(feature["geometry"])
+          if let_g.intersects(let_india_box):
+            let_raj_parts.append(let_g.intersection(let_india_box))
+      if let_raj_parts:
+        let_raw_idx = self.rasteriser.A_rasteriseGeometry(unary_union(let_raj_parts))
+        let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
         let_historical_entities.append({"entity_id": "india_1900", "flat_indices": let_idx})
+
+    # 7. Greece 1920: Kingdom of Greece + Eastern Thrace/Smyrna occupation
+    let_gre1920_geom = self.b_extract_phersu_geom("1920.01.01.json", ["Kingdom of Greece", "Greece (Military Occupation)"])
+    if let_gre1920_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_gre1920_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "greece_1920", "flat_indices": let_idx})
+
+    # 8. Russia 1500: Grand Duchy of Moscow
+    let_rus1500_geom = self.b_extract_phersu_geom("1500.01.01.json", ["Grand Duchy of Moscow"])
+    if let_rus1500_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1500_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "russia_1500", "flat_indices": let_idx})
+
+    # 9. Russia 1650: Tsardom of Russia
+    let_rus1650_geom = self.b_extract_phersu_geom("1650.01.01.json", ["Tsardom of Russia"])
+    if let_rus1650_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1650_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "russia_1650", "flat_indices": let_idx})
+
+    # 10. Russian Empire 1800: Russian Empire
+    let_rus1800_geom = self.b_extract_phersu_geom("1800.01.01.json", ["Russian Empire"])
+    if let_rus1800_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1800_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "russia_1800", "flat_indices": let_idx})
+
+    # 11. Russian Empire 1900: Russian Empire
+    let_rus1900_geom = self.b_extract_phersu_geom("1900.01.01.json", ["Russian Empire"])
+    if let_rus1900_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1900_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "russia_1900", "flat_indices": let_idx})
+
+    # 12. Venice 1500, 1650, 1800: Republic of Venice
+    let_v1500_geom = self.b_extract_phersu_geom("1500.01.01.json", ["Republic of Venice"])
+    if let_v1500_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_v1500_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "venice_1500", "flat_indices": let_idx})
+
+    let_v1650_geom = self.b_extract_phersu_geom("1650.01.01.json", ["Republic of Venice"])
+    if let_v1650_geom:
+      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_v1650_geom)
+      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
+      let_historical_entities.append({"entity_id": "venice_1650", "flat_indices": let_idx})
+
+    for entity in let_base_entities:
+      if entity["entity_id"] == "venice":
+        let_historical_entities.append({"entity_id": "venice_1800", "flat_indices": entity["flat_indices"]})
 
     # Return statement
     return let_historical_entities
 
 
-  def e_generate_palette (self, arg1_count, arg2_seed):
-    """Generates a deterministic, collision-free, high-visibility non-black RGB palette.
-
-    @param {int} arg1_count - Number of distinct colours required.
-    @param {int} arg2_seed - Integer seed controlling coprime stride generation.
-    @return {list} List of [R, G, B] integer triplets.
-    """
-    # Convert from parameters
-    let_count = max(0, int(arg1_count))
-    let_seed = int(arg2_seed)
-
-    # Declare local instance variables
-    let_b_ch = 0
-    let_colours_array = []
-    let_g_ch = 0
-    let_r_ch = 0
-    let_state = (let_seed*2654435761) & 0xFFFFFF
-    let_step = 1046527
-    let_used_codes = set([0])
-
-    # Function body
-    for _ in range(let_count*4 + 64):
-      if len(let_colours_array) >= let_count:
-        break
-      let_state = (let_state + let_step) & 0xFFFFFF
-      if let_state in let_used_codes:
-        continue
-      let_r_ch = (let_state >> 16) & 0xFF
-      let_g_ch = (let_state >> 8) & 0xFF
-      let_b_ch = let_state & 0xFF
-      if max(let_r_ch, let_g_ch, let_b_ch) < 32:
-        continue
-      let_used_codes.add(let_state)
-      let_colours_array.append([int(let_r_ch), int(let_g_ch), int(let_b_ch)])
-
-    # Return statement
-    return let_colours_array
-
-
-  def f_partition_equivalence_classes (self, arg1_entities_array, arg2_png_path, arg3_seed):
+  def e_partition_equivalence_classes (self, arg1_entities_array, arg2_png_path, arg3_seed):
     """Partitions overlapping entities into atomic equivalence classes with certified zero collisions.
 
     @param {list} arg1_entities_array - Array of entity dicts with 'entity_id' and 'flat_indices'.
@@ -482,7 +467,7 @@ class ArealMaskGenerator:
     let_zone_splits = np.flatnonzero(np.diff(let_sorted_inv)) + 1
     let_zone_pixel_arrays = np.split(let_sorted_active_px, let_zone_splits)
 
-    let_palette = self.e_generate_palette(let_num_zones, let_seed)
+    let_palette = self.generate_palette(let_num_zones, let_seed)
 
     for i in range(let_num_ents):
       let_eid = let_entities_array[i]["entity_id"]
@@ -517,7 +502,7 @@ class ArealMaskGenerator:
     }
 
 
-  def g_build_country_masks (self, arg1_entity_rgb_masks):
+  def f_build_country_masks (self, arg1_entity_rgb_masks):
     """Compiles the comprehensive country_masks.json dictionary with historical and regional aliases.
 
     @param {dict} arg1_entity_rgb_masks - Equivalence class RGB mask mapping.
@@ -621,7 +606,7 @@ class ArealMaskGenerator:
     return let_country_masks
 
 
-  def h_build_table_masks (self, arg1_country_masks):
+  def g_build_table_masks (self, arg1_country_masks):
     """Compiles the comprehensive table_masks.json map covering all spreadsheet datasets with era awareness.
 
     @param {dict} arg1_country_masks - Country masks dictionary.
@@ -676,7 +661,46 @@ class ArealMaskGenerator:
     return let_table_masks
 
 
-  def i_build_subadmin_and_city_masks (self, arg1_country_masks):
+  def generate_palette (self, arg1_count, arg2_seed):
+    """Generates a deterministic, collision-free, high-visibility non-black RGB palette.
+
+    @param {int} arg1_count - Number of distinct colours required.
+    @param {int} arg2_seed - Integer seed controlling coprime stride generation.
+    @return {list} List of [R, G, B] integer triplets.
+    """
+    # Convert from parameters
+    let_count = max(0, int(arg1_count))
+    let_seed = int(arg2_seed)
+
+    # Declare local instance variables
+    let_b_ch = 0
+    let_colours_array = []
+    let_g_ch = 0
+    let_r_ch = 0
+    let_state = (let_seed*2654435761) & 0xFFFFFF
+    let_step = 1046527
+    let_used_codes = set([0])
+
+    # Function body
+    for _ in range(let_count*4 + 64):
+      if len(let_colours_array) >= let_count:
+        break
+      let_state = (let_state + let_step) & 0xFFFFFF
+      if let_state in let_used_codes:
+        continue
+      let_r_ch = (let_state >> 16) & 0xFF
+      let_g_ch = (let_state >> 8) & 0xFF
+      let_b_ch = let_state & 0xFF
+      if max(let_r_ch, let_g_ch, let_b_ch) < 32:
+        continue
+      let_used_codes.add(let_state)
+      let_colours_array.append([int(let_r_ch), int(let_g_ch), int(let_b_ch)])
+
+    # Return statement
+    return let_colours_array
+
+
+  def h_build_subadmin_and_city_masks (self, arg1_country_masks):
     """Compiles subadmin_masks.json and city_masks.json deliverables.
 
     @param {dict} arg1_country_masks - Country masks dictionary.
@@ -703,7 +727,7 @@ class ArealMaskGenerator:
     return let_subadmin_masks, let_city_masks
 
 
-  def j_write_compact_flat_json (self, arg1_path, arg2_flat_map):
+  def i_write_compact_flat_json (self, arg1_path, arg2_flat_map):
     """Serialises a flat JSON map atomically with 2-space indented lines.
 
     @param {str} arg1_path - Target output file path.
@@ -740,7 +764,7 @@ class ArealMaskGenerator:
     os.replace(let_tmp_path, let_path)
 
 
-  def k_run_pipeline (self):
+  def j_run_pipeline (self):
     """Executes the complete areal mask generation pipeline end-to-end.
 
     @return {dict} Summary metrics of generated masks.
@@ -767,12 +791,12 @@ class ArealMaskGenerator:
     print("=== Starting Areal Mask Synthesis Pipeline ===")
 
     # Step 1: Build modern base entities
-    print("Step 1/5: Building base modern territory entities...")
+    print("Step 1/5: Building base modern territory entities from Natural Earth 10m...")
     let_base_entities = self.c_build_base_entities()
     print(f"Constructed {len(let_base_entities)} modern base entities.")
 
-    # Step 2: Build historical entities
-    print("Step 2/5: Extracting and rasterising historical border layers...")
+    # Step 2: Build historical entities from Phersu
+    print("Step 2/5: Extracting and rasterising historical border layers from Phersu...")
     let_historical_entities = self.d_build_historical_entities(let_base_entities)
     print(f"Constructed {len(let_historical_entities)} historical border entities.")
 
@@ -781,23 +805,23 @@ class ArealMaskGenerator:
 
     # Step 3: Equivalence class partitioning & provinces.png synthesis
     print("Step 3/5: Running Zobrist equivalence class partitioning...")
-    let_partition_res = self.f_partition_equivalence_classes(let_all_entities, let_png_path, let_seed)
+    let_partition_res = self.e_partition_equivalence_classes(let_all_entities, let_png_path, let_seed)
     print(f"Equivalence classes resolved: {let_partition_res['province_count']} atomic provinces.")
     print(f"Covered pixels: {let_partition_res['covered_pixels']:,}")
 
     # Step 4: Compile country_masks.json
     print("Step 4/5: Compiling country_masks.json...")
-    let_country_masks = self.g_build_country_masks(let_partition_res["entity_rgb_masks"])
-    self.j_write_compact_flat_json(let_country_path, let_country_masks)
+    let_country_masks = self.f_build_country_masks(let_partition_res["entity_rgb_masks"])
+    self.i_write_compact_flat_json(let_country_path, let_country_masks)
 
     # Step 5: Compile table_masks, subadmin_masks, city_masks
     print("Step 5/5: Compiling table, subadmin, and city mask deliverables...")
-    let_table_masks = self.h_build_table_masks(let_country_masks)
-    self.j_write_compact_flat_json(let_table_path, let_table_masks)
+    let_table_masks = self.g_build_table_masks(let_country_masks)
+    self.i_write_compact_flat_json(let_table_path, let_table_masks)
 
-    let_subadmin_masks, let_city_masks = self.i_build_subadmin_and_city_masks(let_country_masks)
-    self.j_write_compact_flat_json(let_subadmin_path, let_subadmin_masks)
-    self.j_write_compact_flat_json(let_city_path, let_city_masks)
+    let_subadmin_masks, let_city_masks = self.h_build_subadmin_and_city_masks(let_country_masks)
+    self.i_write_compact_flat_json(let_subadmin_path, let_subadmin_masks)
+    self.i_write_compact_flat_json(let_city_path, let_city_masks)
 
     let_elapsed = time.time() - let_start_time
     print(f"=== Pipeline Complete in {let_elapsed:.2f}s ===")
@@ -975,4 +999,4 @@ class ArealMaskGenerator:
 
 if __name__ == "__main__":
   let_generator = ArealMaskGenerator()
-  let_generator.k_run_pipeline()
+  let_generator.j_run_pipeline()
