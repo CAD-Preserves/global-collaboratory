@@ -194,6 +194,8 @@ class CountryMaskResolver:
         )
         local_sub = self.rasteriser.A_rasteriseGeometry(local_feats, {"ensure_min_pixel": False})
         if local_sub.size > 0 and flat_indices.size > 0:
+          if local_g.get("snap_to_host", False):
+            local_sub = self.rasteriser.snapHistoricalFrontierToHost(local_sub, flat_indices, local_g.get("snap_options"))
           flat_indices = np.setdiff1d(flat_indices, local_sub, assume_unique=True)
 
     if isinstance(extra_members, list) and extra_members:

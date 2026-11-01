@@ -2,7 +2,7 @@
   // -- Canonical modern, colonial and historical whole-country / constituent territory rules (1495-2025, excluding Antarctica ATA) --
   "countries": {
     "afghanistan": {"era_type": "modern", "name": "Afghanistan", "source": {"iso3": "AFG", "layer": "ne_admin0"}},
-    "alaska": {"era_type": "modern", "name": "Alaska", "source": {"adm0_a3": "USA", "layer": "ne_admin1", "name": "Alaska"}},
+    "alaska": {"era_type": "modern", "name": "Alaska", "source": {"adm0_a3": "USA", "clip_to": ["usa"], "layer": "ne_admin1", "name": "Alaska", "snap_to_host": true}},
     "albania": {"era_type": "modern", "name": "Albania", "source": {"iso3": "ALB", "layer": "ne_admin0"}},
     "algeria": {"era_type": "modern", "name": "Algeria", "source": {"iso3": "DZA", "layer": "ne_admin0"}},
     "american_samoa": {"era_type": "modern", "name": "American Samoa", "source": {"adm0_a3": "ASM", "layer": "ne_admin0", "lonlat_fallback": [-170.7, -14.3]}},
@@ -23,7 +23,8 @@
             "gadm_iso3": "ARG",
             "gadm_level": 2,
             "names": ["AntofagastadelaSierra", "LosAndes", "SantaVictoria", "Susques"],
-            "names_1": ["Catamarca", "Jujuy", "Salta"]
+            "names_1": ["Catamarca", "Jujuy", "Salta"],
+            "snap_to_host": true
           }
         ]
       },
@@ -184,7 +185,7 @@
     "east_germany": {
       "era_type": "historical",
       "name": "German Democratic Republic (East Germany)",
-      "source": {"adm0_a3": "DEU", "layer": "ne_admin1", "names": ["Brandenburg", "Mecklenburg-Vorpommern", "Sachsen", "Sachsen-Anhalt", "Thüringen"]},
+      "source": {"adm0_a3": "DEU", "clip_to": ["germany"], "layer": "ne_admin1", "names": ["Brandenburg", "Mecklenburg-Vorpommern", "Sachsen", "Sachsen-Anhalt", "Thüringen"], "snap_to_host": true},
       "valid_years": [1949, 1990]
     },
     "east_timor": {"era_type": "modern", "name": "East Timor (Timor-Leste)", "source": {"iso3": "TLS", "layer": "ne_admin0"}},
@@ -261,7 +262,7 @@
     "guinea_bissau": {"era_type": "modern", "name": "Guinea-Bissau", "source": {"iso3": "GNB", "layer": "ne_admin0"}},
     "guyana": {"era_type": "modern", "name": "Guyana", "source": {"iso3": "GUY", "layer": "ne_admin0"}},
     "haiti": {"era_type": "modern", "name": "Haiti", "source": {"iso3": "HTI", "layer": "ne_admin0"}},
-    "hawaii": {"era_type": "modern", "name": "Hawaii", "source": {"adm0_a3": "USA", "layer": "ne_admin1", "name": "Hawaii"}},
+    "hawaii": {"era_type": "modern", "name": "Hawaii", "source": {"adm0_a3": "USA", "clip_to": ["usa"], "layer": "ne_admin1", "name": "Hawaii", "snap_to_host": true}},
     "honduras": {"era_type": "modern", "name": "Honduras", "source": {"iso3": "HND", "layer": "ne_admin0"}},
     "hong_kong": {"era_type": "modern", "name": "Hong Kong", "source": {"adm0_a3": "HKG", "layer": "ne_admin0"}},
     "hungary": {"era_type": "modern", "name": "Hungary", "source": {"iso3": "HUN", "layer": "ne_admin0"}},
@@ -425,7 +426,7 @@
     "portuguese_goa": {
       "era_type": "historical",
       "name": "Portuguese Goa (Estado da Índia - Goa)",
-      "source": {"adm0_a3": "IND", "clip_to": ["india"], "layer": "ne_admin1", "names": ["Goa"]},
+      "source": {"adm0_a3": "IND", "clip_to": ["india"], "layer": "ne_admin1", "names": ["Goa"], "snap_to_host": true},
       "valid_years": [1510, 1961]
     },
     "portuguese_india": {
@@ -435,7 +436,8 @@
         "adm0_a3": "IND",
         "clip_to": ["india"],
         "layer": "ne_admin1",
-        "names": ["Dadra and Nagar Haveli and Daman and Diu", "Goa"]
+        "names": ["Dadra and Nagar Haveli and Daman and Diu", "Goa"],
+        "snap_to_host": true
       },
       "valid_years": [1510, 1961]
     },
@@ -536,11 +538,11 @@
       "valid_years": [1815, 1917]
     },
     "rwanda": {"era_type": "modern", "name": "Rwanda", "source": {"iso3": "RWA", "layer": "ne_admin0"}},
-    "sabah": {"era_type": "historical", "name": "Sabah (British North Borneo and Labuan)", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Labuan", "Sabah"]}},
+    "sabah": {"era_type": "historical", "name": "Sabah (British North Borneo and Labuan)", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Labuan", "Sabah"], "snap_to_host": true}},
     "samoa": {"era_type": "modern", "name": "Samoa", "source": {"iso3": "WSM", "layer": "ne_admin0", "lonlat_fallback": [-172.1046, -13.759]}},
     "san_marino": {"era_type": "modern", "name": "San Marino", "source": {"iso3": "SMR", "layer": "ne_admin0", "lonlat_fallback": [12.4578, 43.9424]}},
     "sao_tome_and_principe": {"era_type": "modern", "name": "São Tomé and Príncipe", "source": {"iso3": "STP", "layer": "ne_admin0", "lonlat_fallback": [6.6131, 0.1864]}},
-    "sarawak": {"era_type": "historical", "name": "Sarawak", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Sarawak"]}},
+    "sarawak": {"era_type": "historical", "name": "Sarawak", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Sarawak"], "snap_to_host": true}},
     "saudi_arabia": {"era_type": "modern", "name": "Saudi Arabia", "source": {"iso3": "SAU", "layer": "ne_admin0"}},
     "scotland": {"era_type": "modern", "name": "Scotland", "source": {"layer": "ne_subunits", "su_a3": "SCT"}},
     "senegal": {"era_type": "modern", "name": "Senegal", "source": {"iso3": "SEN", "layer": "ne_admin0"}},
@@ -562,12 +564,6 @@
     "st_kitts_and_nevis": {"era_type": "modern", "name": "Saint Kitts and Nevis", "source": {"iso3": "KNA", "layer": "ne_admin0", "lonlat_fallback": [-62.783, 17.357]}},
     "st_lucia": {"era_type": "modern", "name": "Saint Lucia", "source": {"iso3": "LCA", "layer": "ne_admin0", "lonlat_fallback": [-60.9789, 13.9094]}},
     "st_vincent": {"era_type": "modern", "name": "Saint Vincent and the Grenadines", "source": {"iso3": "VCT", "layer": "ne_admin0", "lonlat_fallback": [-61.2872, 12.9843]}},
-    "straits_settlements": {
-      "era_type": "historical",
-      "name": "Straits Settlements (Singapore, Penang and Malacca)",
-      "source": {"adm0_a3": "MYS", "extra_members": ["singapore"], "layer": "ne_admin1", "names": ["Melaka", "Pulau Pinang"]},
-      "valid_years": [1826, 1946]
-    },
     "sudan": {"era_type": "modern", "name": "Sudan", "source": {"iso3": "SDN", "layer": "ne_admin0"}},
     "suriname": {"era_type": "modern", "name": "Suriname", "source": {"iso3": "SUR", "layer": "ne_admin0"}},
     "swaziland": {"era_type": "modern", "name": "Eswatini (Swaziland)", "source": {"iso3": "SWZ", "layer": "ne_admin0"}},
@@ -613,7 +609,7 @@
     },
     "ukraine": {"era_type": "modern", "name": "Ukraine", "source": {"iso3": "UKR", "layer": "ne_admin0"}},
     "united_arab_emirates": {"era_type": "modern", "name": "United Arab Emirates", "source": {"iso3": "ARE", "layer": "ne_admin0"}},
-    "united_kingdom": {"era_type": "modern", "name": "United Kingdom", "source": {"gu_a3": "GBR", "layer": "ne_map_units"}},
+    "united_kingdom": {"era_type": "modern", "name": "United Kingdom", "source": {"members": ["great_britain", "northern_ireland"], "type": "union"}},
     "united_states_1860": {
       "era_type": "historical",
       "name": "Contiguous United States (1860 Borders)",
@@ -720,7 +716,6 @@
     "sabah",
     "sarawak",
     "scotland",
-    "straits_settlements",
     "wales"
   ],
 
