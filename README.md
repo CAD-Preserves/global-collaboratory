@@ -1,7 +1,7 @@
 # global-collaboratory
 
 > [!NOTE]
-> This is kept out-of-sample for the **NWM** for verification and testing purposes. It is not incorporated into other Confederal models.
+> This is kept out-of-sample of the **NWM** for verification and testing purposes. It is not incorporated into other Confederal models.
 
 **Global Collaboratory on the History of Labour Relations (1500-2000)** (CC-BY-SA-4.0). See the IISH page: https://iisg.amsterdam/en/research/projects/global-collaboratory-on-the-history-of-labour-relations-1500-2000
 
