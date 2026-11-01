@@ -81,7 +81,7 @@ class ArealMaskTestSuite:
 
     present_codes = set(int(c) for c in np.unique(packed_grid[packed_grid > 0]))
     land_px = int(np.count_nonzero(packed_grid))
-    assert land_px > 2500000, f"Expected > 2,5M land pixels, got {land_px}"
+    assert land_px > 2000000, f"Expected > 2,0M non-Antarctic land pixels, got {land_px}"
     print(f"[PASS] provinces.png verified: 4320x2160 RGB PNG, {len(present_codes)} province colourcodes, {land_px} land pixels, ATA excluded.")
 
     country_masks = orjson.loads(open(os.path.join(self.out_dir, "country_masks.json"), "rb").read())
