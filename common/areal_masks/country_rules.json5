@@ -1,0 +1,738 @@
+{
+  // -- Canonical modern, colonial and historical whole-country / constituent territory rules (1495-2025, excluding Antarctica ATA) --
+  "countries": {
+    "afghanistan": {"era_type": "modern", "name": "Afghanistan", "source": {"iso3": "AFG", "layer": "ne_admin0"}},
+    "alaska": {"era_type": "modern", "name": "Alaska", "source": {"adm0_a3": "USA", "layer": "ne_admin1", "name": "Alaska"}},
+    "albania": {"era_type": "modern", "name": "Albania", "source": {"iso3": "ALB", "layer": "ne_admin0"}},
+    "algeria": {"era_type": "modern", "name": "Algeria", "source": {"iso3": "DZA", "layer": "ne_admin0"}},
+    "american_samoa": {"era_type": "modern", "name": "American Samoa", "source": {"adm0_a3": "ASM", "layer": "ne_admin0", "lonlat_fallback": [-170.7, -14.3]}},
+    "andorra": {"era_type": "modern", "name": "Andorra", "source": {"iso3": "AND", "layer": "ne_admin0", "lonlat_fallback": [1.5218, 42.5063]}},
+    "angola": {"era_type": "modern", "name": "Angola", "source": {"iso3": "AGO", "layer": "ne_admin0"}},
+    "anguilla": {"era_type": "modern", "name": "Anguilla", "source": {"adm0_a3": "AIA", "layer": "ne_admin0", "lonlat_fallback": [-63.0686, 18.2206]}},
+    "antigua_and_barbuda": {"era_type": "modern", "name": "Antigua and Barbuda", "source": {"iso3": "ATG", "layer": "ne_admin0", "lonlat_fallback": [-61.7964, 17.0608]}},
+    "argentina": {"era_type": "modern", "name": "Argentina", "source": {"iso3": "ARG", "layer": "ne_admin0"}},
+    "argentina_1900": {
+      "era_type": "historical",
+      "name": "Argentina (1895 Census Borders)",
+      "source": {
+        "clip_to": ["argentina"],
+        "iso3": "ARG",
+        "layer": "ne_admin0",
+        "subtract_gadm": [
+          {
+            "gadm_iso3": "ARG",
+            "gadm_level": 2,
+            "names": ["AntofagastadelaSierra", "LosAndes", "SantaVictoria", "Susques"],
+            "names_1": ["Catamarca", "Jujuy", "Salta"]
+          }
+        ]
+      },
+      "valid_years": [1884, 1900]
+    },
+    "armenia": {"era_type": "modern", "name": "Armenia", "source": {"iso3": "ARM", "layer": "ne_admin0"}},
+    "aruba": {"era_type": "modern", "name": "Aruba", "source": {"adm0_a3": "ABW", "layer": "ne_admin0", "lonlat_fallback": [-69.9683, 12.5211]}},
+    "australia": {"era_type": "modern", "name": "Australia", "source": {"iso3": "AUS", "layer": "ne_admin0"}},
+    "austria": {"era_type": "modern", "name": "Austria", "source": {"iso3": "AUT", "layer": "ne_admin0"}},
+    "austria_hungary": {
+      "era_type": "historical",
+      "name": "Austria-Hungary (1867-1918)",
+      "source": {
+        "extra_admin1": [
+          {"adm0_a3": "ITA", "names": ["Bozen", "Gorizia", "Trento", "Trieste"]},
+          {"adm0_a3": "POL", "names": ["Lesser Poland", "Subcarpathian"]},
+          {"adm0_a3": "ROU", "names": ["Alba", "Arad", "Bihor", "Bistrița-Năsăud", "Brașov", "Caraș-Severin", "Cluj", "Covasna", "Harghita", "Hunedoara", "Maramureș", "Mureș", "Sălaj", "Satu Mare", "Sibiu", "Suceava", "Timiș"]},
+          {"adm0_a3": "UKR", "names": ["Chernivtsi", "Ivano-Frankivs'k", "L'viv", "Ternopil'", "Zakarpattia"]}
+        ],
+        "members": ["austria", "bosnia_and_herzegovina", "croatia", "czech_republic", "hungary", "slovakia", "slovenia"],
+        "type": "union"
+      },
+      "valid_years": [1867, 1918]
+    },
+    "azerbaijan": {"era_type": "modern", "name": "Azerbaijan", "source": {"iso3": "AZE", "layer": "ne_admin0"}},
+    "bahamas": {"era_type": "modern", "name": "Bahamas", "source": {"iso3": "BHS", "layer": "ne_admin0"}},
+    "bahrain": {"era_type": "modern", "name": "Bahrain", "source": {"iso3": "BHR", "layer": "ne_admin0", "lonlat_fallback": [50.5577, 26.0667]}},
+    "bangladesh": {"era_type": "modern", "name": "Bangladesh", "source": {"iso3": "BGD", "layer": "ne_admin0"}},
+    "barbados": {"era_type": "modern", "name": "Barbados", "source": {"iso3": "BRB", "layer": "ne_admin0", "lonlat_fallback": [-59.5432, 13.1939]}},
+    "belarus": {"era_type": "modern", "name": "Belarus", "source": {"iso3": "BLR", "layer": "ne_admin0"}},
+    "belgium": {"era_type": "modern", "name": "Belgium", "source": {"iso3": "BEL", "layer": "ne_admin0"}},
+    "belize": {"era_type": "modern", "name": "Belize", "source": {"iso3": "BLZ", "layer": "ne_admin0"}},
+    "benin": {"era_type": "modern", "name": "Benin", "source": {"iso3": "BEN", "layer": "ne_admin0"}},
+    "bermuda": {"era_type": "modern", "name": "Bermuda", "source": {"adm0_a3": "BMU", "layer": "ne_admin0", "lonlat_fallback": [-64.7505, 32.3078]}},
+    "bhutan": {"era_type": "modern", "name": "Bhutan", "source": {"iso3": "BTN", "layer": "ne_admin0"}},
+    "bolivia": {"era_type": "modern", "name": "Bolivia", "source": {"iso3": "BOL", "layer": "ne_admin0"}},
+    "bolivia_pre_1879": {
+      "era_type": "historical",
+      "name": "Bolivia (including Litoral, pre-1879)",
+      "source": {"extra_admin1": [{"adm0_a3": "CHL", "names": ["Antofagasta"]}], "members": ["bolivia"], "type": "union"},
+      "valid_years": [1825, 1879]
+    },
+    "bosnia_and_herzegovina": {"era_type": "modern", "name": "Bosnia and Herzegovina", "source": {"iso3": "BIH", "layer": "ne_admin0"}},
+    "botswana": {"era_type": "modern", "name": "Botswana", "source": {"iso3": "BWA", "layer": "ne_admin0"}},
+    "brazil": {"era_type": "modern", "name": "Brazil", "source": {"iso3": "BRA", "layer": "ne_admin0"}},
+    "brazil_1650": {
+      "era_type": "historical",
+      "name": "Colonial Brazil (c. 1630-1650 Captaincies)",
+      "source": {
+        "clip_to": ["brazil"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1630.01.01.json",
+        "states": ["Portuguese Brazil"]
+      },
+      "valid_years": [1580, 1700]
+    },
+    "brazil_1800": {
+      "era_type": "historical",
+      "name": "Viceroyalty of Brazil (1808)",
+      "source": {
+        "clip_to": ["brazil"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1808.01.01.json",
+        "states": ["Portuguese Brazil"]
+      },
+      "valid_years": [1750, 1822]
+    },
+    "british_borneo": {
+      "era_type": "historical",
+      "name": "British Borneo (Sabah, Sarawak and Labuan)",
+      "source": {"members": ["sabah", "sarawak"], "type": "union"},
+      "valid_years": [1888, 1963]
+    },
+    "british_india_all": {
+      "era_type": "historical",
+      "name": "Indian Empire (British Provinces, Princely States and Burma)",
+      "source": {"members": ["british_india_ex_burma", "myanmar"], "type": "union"},
+      "valid_years": [1858, 1937]
+    },
+    "british_india_ex_burma": {
+      "era_type": "historical",
+      "name": "British India and Princely States (excluding Burma)",
+      "source": {"exclude_countries": ["portuguese_india"], "members": ["bangladesh", "india", "pakistan"], "type": "union"},
+      "valid_years": [1858, 1947]
+    },
+    "british_malaya_1931": {
+      "era_type": "historical",
+      "name": "British Malaya (Straits Settlements, FMS, UMS and Brunei, 1931 Census)",
+      "source": {"members": ["brunei", "peninsular_malaya", "singapore"], "type": "union"},
+      "valid_years": [1909, 1946]
+    },
+    "british_somaliland": {"era_type": "historical", "name": "British Somaliland", "source": {"adm0_a3": "SOL", "layer": "ne_admin0"}},
+    "british_virgin_islands": {"era_type": "modern", "name": "British Virgin Islands", "source": {"adm0_a3": "VGB", "layer": "ne_admin0", "lonlat_fallback": [-64.6231, 18.4207]}},
+    "brunei": {"era_type": "modern", "name": "Brunei", "source": {"iso3": "BRN", "layer": "ne_admin0"}},
+    "bulgaria": {"era_type": "modern", "name": "Bulgaria", "source": {"iso3": "BGR", "layer": "ne_admin0"}},
+    "burkina_faso": {"era_type": "modern", "name": "Burkina Faso", "source": {"iso3": "BFA", "layer": "ne_admin0"}},
+    "burundi": {"era_type": "modern", "name": "Burundi", "source": {"iso3": "BDI", "layer": "ne_admin0"}},
+    "cambodia": {"era_type": "modern", "name": "Cambodia", "source": {"iso3": "KHM", "layer": "ne_admin0"}},
+    "cameroon": {"era_type": "modern", "name": "Cameroon", "source": {"iso3": "CMR", "layer": "ne_admin0"}},
+    "canada": {"era_type": "modern", "name": "Canada", "source": {"iso3": "CAN", "layer": "ne_admin0"}},
+    "cape_verde": {"era_type": "modern", "name": "Cape Verde", "source": {"iso3": "CPV", "layer": "ne_admin0", "lonlat_fallback": [-23.6052, 15.1201]}},
+    "cayman_islands": {"era_type": "modern", "name": "Cayman Islands", "source": {"adm0_a3": "CYM", "layer": "ne_admin0", "lonlat_fallback": [-81.2546, 19.3133]}},
+    "central_african_republic": {"era_type": "modern", "name": "Central African Republic", "source": {"iso3": "CAF", "layer": "ne_admin0"}},
+    "chad": {"era_type": "modern", "name": "Chad", "source": {"iso3": "TCD", "layer": "ne_admin0"}},
+    "chile": {"era_type": "modern", "name": "Chile", "source": {"iso3": "CHL", "layer": "ne_admin0"}},
+    "china": {"era_type": "modern", "name": "China", "source": {"iso3": "CHN", "layer": "ne_admin0"}},
+    "colombia": {"era_type": "modern", "name": "Colombia", "source": {"iso3": "COL", "layer": "ne_admin0"}},
+    "comoros": {"era_type": "modern", "name": "Comoros", "source": {"iso3": "COM", "layer": "ne_admin0", "lonlat_fallback": [43.3333, -11.6455]}},
+    "company_raj_1800": {
+      "era_type": "historical",
+      "name": "East India Company Raj (c. 1808-1822)",
+      "source": {
+        "clip_to": ["bangladesh", "india"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1808.01.01.json",
+        "states": ["British East India Company"]
+      },
+      "valid_years": [1795, 1857]
+    },
+    "congo": {"era_type": "modern", "name": "Republic of the Congo", "source": {"iso3": "COG", "layer": "ne_admin0"}},
+    "cook_islands": {"era_type": "modern", "name": "Cook Islands", "source": {"adm0_a3": "COK", "layer": "ne_admin0", "lonlat_fallback": [-159.7777, -21.2367]}},
+    "costa_rica": {"era_type": "modern", "name": "Costa Rica", "source": {"iso3": "CRI", "layer": "ne_admin0"}},
+    "croatia": {"era_type": "modern", "name": "Croatia", "source": {"iso3": "HRV", "layer": "ne_admin0"}},
+    "cuba": {"era_type": "modern", "name": "Cuba", "source": {"iso3": "CUB", "layer": "ne_admin0"}},
+    "curacao": {"era_type": "modern", "name": "Curaçao", "source": {"adm0_a3": "CUW", "layer": "ne_admin0", "lonlat_fallback": [-68.99, 12.1696]}},
+    "cyprus": {"era_type": "modern", "name": "Cyprus", "source": {"adm0_a3_list": ["CYP", "CYN"], "layer": "ne_admin0"}},
+    "czech_republic": {"era_type": "modern", "name": "Czech Republic", "source": {"iso3": "CZE", "layer": "ne_admin0"}},
+    "czechoslovakia": {
+      "era_type": "historical",
+      "name": "Czechoslovakia",
+      "source": {"members": ["czech_republic", "slovakia"], "type": "union"},
+      "valid_years": [1918, 1992]
+    },
+    "denmark": {"era_type": "modern", "name": "Denmark", "source": {"adm0_a3": "DNK", "layer": "ne_admin0"}},
+    "djibouti": {"era_type": "modern", "name": "Djibouti", "source": {"iso3": "DJI", "layer": "ne_admin0"}},
+    "dodecanese": {
+      "era_type": "historical",
+      "name": "Dodecanese Islands (Italian Aegean Islands, 1912-1947)",
+      "source": {
+        "clip_to": ["greece"],
+        "gadm_iso3": "GRC",
+        "gadm_level": 3,
+        "layer": "gadm",
+        "names": [
+          "Agathonisi", "Astypalaia", "Chalki", "Kalymnos", "Karpathos",
+          "Kasos", "Kos", "Leipsoi", "Leros", "Megisti",
+          "Nisyros", "Patmos", "Rhodos", "Symi", "Tilos"
+        ],
+        "snap_to_host": true
+      },
+      "valid_years": [1912, 1947]
+    },
+    "dominica": {"era_type": "modern", "name": "Dominica", "source": {"iso3": "DMA", "layer": "ne_admin0", "lonlat_fallback": [-61.371, 15.415]}},
+    "dominican_republic": {"era_type": "modern", "name": "Dominican Republic", "source": {"iso3": "DOM", "layer": "ne_admin0"}},
+    "east_germany": {
+      "era_type": "historical",
+      "name": "German Democratic Republic (East Germany)",
+      "source": {"adm0_a3": "DEU", "layer": "ne_admin1", "names": ["Brandenburg", "Mecklenburg-Vorpommern", "Sachsen", "Sachsen-Anhalt", "Thüringen"]},
+      "valid_years": [1949, 1990]
+    },
+    "east_timor": {"era_type": "modern", "name": "East Timor (Timor-Leste)", "source": {"iso3": "TLS", "layer": "ne_admin0"}},
+    "ecuador": {"era_type": "modern", "name": "Ecuador", "source": {"iso3": "ECU", "layer": "ne_admin0"}},
+    "egypt": {"era_type": "modern", "name": "Egypt", "source": {"iso3": "EGY", "layer": "ne_admin0"}},
+    "el_salvador": {"era_type": "modern", "name": "El Salvador", "source": {"iso3": "SLV", "layer": "ne_admin0"}},
+    "england": {"era_type": "modern", "name": "England", "source": {"layer": "ne_subunits", "su_a3": "ENG"}},
+    "england_and_wales": {"era_type": "modern", "name": "England and Wales", "source": {"members": ["england", "wales"], "type": "union"}},
+    "equatorial_guinea": {"era_type": "modern", "name": "Equatorial Guinea", "source": {"iso3": "GNQ", "layer": "ne_admin0"}},
+    "eritrea": {"era_type": "modern", "name": "Eritrea", "source": {"iso3": "ERI", "layer": "ne_admin0"}},
+    "estonia": {"era_type": "modern", "name": "Estonia", "source": {"iso3": "EST", "layer": "ne_admin0"}},
+    "ethiopia": {"era_type": "modern", "name": "Ethiopia", "source": {"iso3": "ETH", "layer": "ne_admin0"}},
+    "falkland_islands": {"era_type": "modern", "name": "Falkland Islands", "source": {"adm0_a3": "FLK", "layer": "ne_admin0"}},
+    "faroe_islands": {"era_type": "modern", "name": "Faroe Islands", "source": {"adm0_a3": "FRO", "layer": "ne_admin0"}},
+    "fiji": {"era_type": "modern", "name": "Fiji", "source": {"iso3": "FJI", "layer": "ne_admin0"}},
+    "finland": {"era_type": "modern", "name": "Finland", "source": {"adm0_a3": "FIN", "layer": "ne_admin0"}},
+    "france": {"era_type": "modern", "name": "Metropolitan France", "source": {"gu_a3": "FXX", "layer": "ne_map_units"}},
+    "france_1900": {
+      "era_type": "historical",
+      "name": "Third French Republic (1871-1918, excluding Alsace-Lorraine)",
+      "source": {
+        "base": "france",
+        "subtract_admin1": [{"adm0_a3": "FRA", "names": ["Bas-Rhin", "Haut-Rhin", "Haute-Rhin", "Moselle"]}],
+        "type": "difference"
+      },
+      "valid_years": [1871, 1918]
+    },
+    "french_guiana": {"era_type": "modern", "name": "French Guiana", "source": {"gu_a3": "GUF", "layer": "ne_map_units"}},
+    "french_polynesia": {"era_type": "modern", "name": "French Polynesia", "source": {"adm0_a3": "PYF", "layer": "ne_admin0"}},
+    "gabon": {"era_type": "modern", "name": "Gabon", "source": {"iso3": "GAB", "layer": "ne_admin0"}},
+    "gambia": {"era_type": "modern", "name": "Gambia", "source": {"iso3": "GMB", "layer": "ne_admin0"}},
+    "georgia": {"era_type": "modern", "name": "Georgia", "source": {"iso3": "GEO", "layer": "ne_admin0"}},
+    "german_empire": {
+      "era_type": "historical",
+      "name": "German Empire (1871-1918)",
+      "source": {
+        "extra_admin1": [
+          {"adm0_a3": "FRA", "names": ["Bas-Rhin", "Haut-Rhin", "Haute-Rhin", "Moselle"]},
+          {"adm0_a3": "POL", "names": ["Greater Poland", "Lower Silesian", "Lubusz", "Opole", "Pomeranian", "Silesian", "Warmian-Masurian", "West Pomeranian"]},
+          {"adm0_a3": "RUS", "names": ["Kaliningrad"]}
+        ],
+        "members": ["germany"],
+        "type": "union"
+      },
+      "valid_years": [1871, 1918]
+    },
+    "germany": {"era_type": "modern", "name": "Germany", "source": {"iso3": "DEU", "layer": "ne_admin0"}},
+    "ghana": {"era_type": "modern", "name": "Ghana", "source": {"iso3": "GHA", "layer": "ne_admin0"}},
+    "gibraltar": {"era_type": "modern", "name": "Gibraltar", "source": {"adm0_a3": "GIB", "layer": "ne_admin0", "lonlat_fallback": [-5.3536, 36.1408]}},
+    "great_britain": {"era_type": "modern", "name": "Great Britain", "source": {"members": ["england", "scotland", "wales"], "type": "union"}},
+    "greece": {"era_type": "modern", "name": "Greece", "source": {"iso3": "GRC", "layer": "ne_admin0"}},
+    "greece_1920": {
+      "era_type": "historical",
+      "name": "Kingdom of Greece (1920 Census including Eastern Thrace, excluding Dodecanese)",
+      "source": {
+        "extra_admin1": [{"adm0_a3": "TUR", "names": ["Edirne", "Kırklareli", "Kirklareli", "Tekirdağ", "Tekirdag"]}],
+        "members": ["greece_1928"],
+        "type": "union"
+      },
+      "valid_years": [1920, 1922]
+    },
+    "greece_1928": {
+      "era_type": "historical",
+      "name": "Second Hellenic Republic (1923-1947, excluding Dodecanese)",
+      "source": {"base": "greece", "subtract": ["dodecanese"], "type": "difference"},
+      "valid_years": [1923, 1947]
+    },
+    "greenland": {"era_type": "modern", "name": "Greenland", "source": {"adm0_a3": "GRL", "layer": "ne_admin0"}},
+    "grenada": {"era_type": "modern", "name": "Grenada", "source": {"iso3": "GRD", "layer": "ne_admin0", "lonlat_fallback": [-61.679, 12.1165]}},
+    "guadeloupe": {"era_type": "modern", "name": "Guadeloupe", "source": {"gu_a3": "GLP", "layer": "ne_map_units", "lonlat_fallback": [-61.55, 16.25]}},
+    "guam": {"era_type": "modern", "name": "Guam", "source": {"adm0_a3": "GUM", "layer": "ne_admin0", "lonlat_fallback": [144.7937, 13.4443]}},
+    "guatemala": {"era_type": "modern", "name": "Guatemala", "source": {"iso3": "GTM", "layer": "ne_admin0"}},
+    "guinea": {"era_type": "modern", "name": "Guinea", "source": {"iso3": "GIN", "layer": "ne_admin0"}},
+    "guinea_bissau": {"era_type": "modern", "name": "Guinea-Bissau", "source": {"iso3": "GNB", "layer": "ne_admin0"}},
+    "guyana": {"era_type": "modern", "name": "Guyana", "source": {"iso3": "GUY", "layer": "ne_admin0"}},
+    "haiti": {"era_type": "modern", "name": "Haiti", "source": {"iso3": "HTI", "layer": "ne_admin0"}},
+    "hawaii": {"era_type": "modern", "name": "Hawaii", "source": {"adm0_a3": "USA", "layer": "ne_admin1", "name": "Hawaii"}},
+    "honduras": {"era_type": "modern", "name": "Honduras", "source": {"iso3": "HND", "layer": "ne_admin0"}},
+    "hong_kong": {"era_type": "modern", "name": "Hong Kong", "source": {"adm0_a3": "HKG", "layer": "ne_admin0"}},
+    "hungary": {"era_type": "modern", "name": "Hungary", "source": {"iso3": "HUN", "layer": "ne_admin0"}},
+    "iceland": {"era_type": "modern", "name": "Iceland", "source": {"iso3": "ISL", "layer": "ne_admin0"}},
+    "india": {"era_type": "modern", "name": "Republic of India", "source": {"iso3": "IND", "layer": "ne_admin0"}},
+    "indochina": {
+      "era_type": "historical",
+      "name": "French Indochina",
+      "source": {"members": ["cambodia", "laos", "vietnam"], "type": "union"},
+      "valid_years": [1887, 1954]
+    },
+    "indonesia": {"era_type": "modern", "name": "Indonesia", "source": {"iso3": "IDN", "layer": "ne_admin0"}},
+    "indonesia_outer_islands": {
+      "era_type": "historical",
+      "name": "Indonesian Outer Islands (Buitengewesten, excluding Java and Madura)",
+      "source": {"base": "indonesia", "subtract": ["java_and_madura"], "type": "difference"},
+      "valid_years": [1800, 1949]
+    },
+    "iran": {"era_type": "modern", "name": "Iran", "source": {"iso3": "IRN", "layer": "ne_admin0"}},
+    "iraq": {"era_type": "modern", "name": "Iraq", "source": {"iso3": "IRQ", "layer": "ne_admin0"}},
+    "ireland": {"era_type": "modern", "name": "Ireland", "source": {"iso3": "IRL", "layer": "ne_admin0"}},
+    "ireland_whole_island": {
+      "era_type": "historical",
+      "name": "Ireland (Whole Island)",
+      "source": {"members": ["ireland", "northern_ireland"], "type": "union"},
+      "valid_years": [1500, 1922]
+    },
+    "isle_of_man_and_channel_islands": {
+      "era_type": "modern",
+      "name": "Islands in the British Seas (Isle of Man, Jersey and Guernsey)",
+      "source": {"adm0_a3_list": ["GGY", "IMN", "JEY"], "layer": "ne_admin0", "lonlat_fallback": [-4.5481, 54.2361]}
+    },
+    "israel": {"era_type": "modern", "name": "Israel", "source": {"adm0_a3": "ISR", "layer": "ne_admin0"}},
+    "italian_somaliland": {"era_type": "historical", "name": "Italian Somaliland", "source": {"adm0_a3": "SOM", "layer": "ne_admin0"}},
+    "italy": {"era_type": "modern", "name": "Italy", "source": {"iso3": "ITA", "layer": "ne_admin0"}},
+    "italy_1936": {
+      "era_type": "historical",
+      "name": "Kingdom of Italy (1936 Census Borders incl. Venezia Giulia, Zara and Dodecanese)",
+      "source": {
+        "extra_admin1": [
+          {"adm0_a3": "HRV", "names": ["Istarska", "Zadarska"]},
+          {
+            "adm0_a3": "SVN",
+            "names": [
+              "Ajdovščina", "Bovec", "Brda", "Cerkno", "Divaca", "Hrpelje-Kozina",
+              "Idrija", "Ilirska Bistrica", "Izola", "Kanal", "Kobarid", "Komen",
+              "Koper", "Miren-Kostanjevica", "Nova Goriška", "Piran", "Pivka",
+              "Postojna", "Sežana", "Šempeter-Vrtojba", "Tolmin", "Vipava"
+            ]
+          }
+        ],
+        "members": ["dodecanese", "italy"],
+        "type": "union"
+      },
+      "valid_years": [1924, 1943]
+    },
+    "ivory_coast": {"era_type": "modern", "name": "Ivory Coast (Côte d'Ivoire)", "source": {"iso3": "CIV", "layer": "ne_admin0"}},
+    "jamaica": {"era_type": "modern", "name": "Jamaica", "source": {"iso3": "JAM", "layer": "ne_admin0"}},
+    "japan": {"era_type": "modern", "name": "Japan", "source": {"iso3": "JPN", "layer": "ne_admin0"}},
+    "japan_1800": {
+      "era_type": "historical",
+      "name": "Tokugawa Japan (Core 66 Provinces: Honshu, Shikoku and Kyushu)",
+      "source": {
+        "base": "japan",
+        "subtract_admin1": [{"adm0_a3": "JPN", "names": ["Hokkaidō", "Hokkaido", "Okinawa"]}],
+        "type": "difference"
+      },
+      "valid_years": [1603, 1868]
+    },
+    "java_and_madura": {
+      "era_type": "modern",
+      "name": "Java and Madura (Indonesia)",
+      "source": {
+        "adm0_a3": "IDN",
+        "clip_to": ["indonesia"],
+        "layer": "ne_admin1",
+        "names": ["Banten", "Jakarta Raya", "Jawa Barat", "Jawa Tengah", "Jawa Timur", "Yogyakarta"],
+        "snap_to_host": true
+      }
+    },
+    "jordan": {"era_type": "modern", "name": "Jordan", "source": {"iso3": "JOR", "layer": "ne_admin0"}},
+    "kazakhstan": {"era_type": "modern", "name": "Kazakhstan", "source": {"iso3": "KAZ", "layer": "ne_admin0"}},
+    "kenya": {"era_type": "modern", "name": "Kenya", "source": {"iso3": "KEN", "layer": "ne_admin0"}},
+    "kiribati": {"era_type": "modern", "name": "Kiribati", "source": {"iso3": "KIR", "layer": "ne_admin0", "lonlat_fallback": [172.9717, 1.4518]}},
+    "korea": {
+      "era_type": "historical",
+      "name": "Unified Korea",
+      "source": {"members": ["north_korea", "south_korea"], "type": "union"},
+      "valid_years": [1500, 1945]
+    },
+    "kosovo": {"era_type": "modern", "name": "Kosovo", "source": {"adm0_a3": "KOS", "layer": "ne_admin0"}},
+    "kuwait": {"era_type": "modern", "name": "Kuwait", "source": {"iso3": "KWT", "layer": "ne_admin0"}},
+    "kyrgyzstan": {"era_type": "modern", "name": "Kyrgyzstan", "source": {"iso3": "KGZ", "layer": "ne_admin0"}},
+    "laos": {"era_type": "modern", "name": "Laos", "source": {"iso3": "LAO", "layer": "ne_admin0"}},
+    "latvia": {"era_type": "modern", "name": "Latvia", "source": {"iso3": "LVA", "layer": "ne_admin0"}},
+    "lebanon": {"era_type": "modern", "name": "Lebanon", "source": {"iso3": "LBN", "layer": "ne_admin0"}},
+    "lesotho": {"era_type": "modern", "name": "Lesotho", "source": {"iso3": "LSO", "layer": "ne_admin0"}},
+    "liberia": {"era_type": "modern", "name": "Liberia", "source": {"iso3": "LBR", "layer": "ne_admin0"}},
+    "libya": {"era_type": "modern", "name": "Libya", "source": {"iso3": "LBY", "layer": "ne_admin0"}},
+    "liechtenstein": {"era_type": "modern", "name": "Liechtenstein", "source": {"iso3": "LIE", "layer": "ne_admin0", "lonlat_fallback": [9.5554, 47.166]}},
+    "lithuania": {"era_type": "modern", "name": "Lithuania", "source": {"iso3": "LTU", "layer": "ne_admin0"}},
+    "luxembourg": {"era_type": "modern", "name": "Luxembourg", "source": {"iso3": "LUX", "layer": "ne_admin0"}},
+    "macau": {"era_type": "modern", "name": "Macau", "source": {"adm0_a3": "MAC", "layer": "ne_admin0", "lonlat_fallback": [113.5439, 22.1987]}},
+    "macedonia": {"era_type": "modern", "name": "North Macedonia", "source": {"iso3": "MKD", "layer": "ne_admin0"}},
+    "madagascar": {"era_type": "modern", "name": "Madagascar", "source": {"iso3": "MDG", "layer": "ne_admin0"}},
+    "malawi": {"era_type": "modern", "name": "Malawi", "source": {"iso3": "MWI", "layer": "ne_admin0"}},
+    "malaysia": {"era_type": "modern", "name": "Malaysia", "source": {"iso3": "MYS", "layer": "ne_admin0"}},
+    "maldives": {"era_type": "modern", "name": "Maldives", "source": {"iso3": "MDV", "layer": "ne_admin0", "lonlat_fallback": [73.5093, 4.1755]}},
+    "mali": {"era_type": "modern", "name": "Mali", "source": {"iso3": "MLI", "layer": "ne_admin0"}},
+    "malta": {"era_type": "modern", "name": "Malta", "source": {"iso3": "MLT", "layer": "ne_admin0", "lonlat_fallback": [14.3754, 35.9375]}},
+    "marshall_islands": {"era_type": "modern", "name": "Marshall Islands", "source": {"iso3": "MHL", "layer": "ne_admin0", "lonlat_fallback": [171.1845, 7.1315]}},
+    "martinique": {"era_type": "modern", "name": "Martinique", "source": {"gu_a3": "MTQ", "layer": "ne_map_units", "lonlat_fallback": [-61.02, 14.64]}},
+    "mauritania": {"era_type": "modern", "name": "Mauritania", "source": {"iso3": "MRT", "layer": "ne_admin0"}},
+    "mauritius": {"era_type": "modern", "name": "Mauritius", "source": {"iso3": "MUS", "layer": "ne_admin0", "lonlat_fallback": [57.5522, -20.3484]}},
+    "mexico": {"era_type": "modern", "name": "Mexico", "source": {"iso3": "MEX", "layer": "ne_admin0"}},
+    "micronesia_fs": {"era_type": "modern", "name": "Federated States of Micronesia", "source": {"iso3": "FSM", "layer": "ne_admin0", "lonlat_fallback": [158.15, 6.92]}},
+    "moldova": {"era_type": "modern", "name": "Moldova", "source": {"iso3": "MDA", "layer": "ne_admin0"}},
+    "monaco": {"era_type": "modern", "name": "Monaco", "source": {"iso3": "MCO", "layer": "ne_admin0", "lonlat_fallback": [7.4128, 43.7384]}},
+    "mongolia": {"era_type": "modern", "name": "Mongolia", "source": {"iso3": "MNG", "layer": "ne_admin0"}},
+    "montenegro": {"era_type": "modern", "name": "Montenegro", "source": {"iso3": "MNE", "layer": "ne_admin0"}},
+    "montserrat": {"era_type": "modern", "name": "Montserrat", "source": {"adm0_a3": "MSR", "layer": "ne_admin0", "lonlat_fallback": [-62.187, 16.742]}},
+    "morocco": {"era_type": "modern", "name": "Morocco", "source": {"iso3": "MAR", "layer": "ne_admin0"}},
+    "mozambique": {"era_type": "modern", "name": "Mozambique", "source": {"iso3": "MOZ", "layer": "ne_admin0"}},
+    "myanmar": {"era_type": "modern", "name": "Myanmar (Burma)", "source": {"iso3": "MMR", "layer": "ne_admin0"}},
+    "namibia": {"era_type": "modern", "name": "Namibia", "source": {"iso3": "NAM", "layer": "ne_admin0"}},
+    "nauru": {"era_type": "modern", "name": "Nauru", "source": {"iso3": "NRU", "layer": "ne_admin0", "lonlat_fallback": [166.9315, -0.5228]}},
+    "nepal": {"era_type": "modern", "name": "Nepal", "source": {"iso3": "NPL", "layer": "ne_admin0"}},
+    "netherlands": {"era_type": "modern", "name": "Netherlands", "source": {"gu_a3": "NLX", "layer": "ne_map_units"}},
+    "new_caledonia": {"era_type": "modern", "name": "New Caledonia", "source": {"adm0_a3": "NCL", "layer": "ne_admin0"}},
+    "new_zealand": {"era_type": "modern", "name": "New Zealand", "source": {"iso3": "NZL", "layer": "ne_admin0"}},
+    "nicaragua": {"era_type": "modern", "name": "Nicaragua", "source": {"iso3": "NIC", "layer": "ne_admin0"}},
+    "niger": {"era_type": "modern", "name": "Niger", "source": {"iso3": "NER", "layer": "ne_admin0"}},
+    "nigeria": {"era_type": "modern", "name": "Nigeria", "source": {"iso3": "NGA", "layer": "ne_admin0"}},
+    "north_korea": {"era_type": "modern", "name": "North Korea", "source": {"iso3": "PRK", "layer": "ne_admin0"}},
+    "northern_ireland": {"era_type": "modern", "name": "Northern Ireland", "source": {"layer": "ne_subunits", "su_a3": "NIR"}},
+    "northern_mariana_islands": {"era_type": "modern", "name": "Northern Mariana Islands", "source": {"adm0_a3": "MNP", "layer": "ne_admin0", "lonlat_fallback": [145.75, 15.18]}},
+    "norway": {"era_type": "modern", "name": "Norway", "source": {"adm0_a3": "NOR", "layer": "ne_admin0"}},
+    "oman": {"era_type": "modern", "name": "Oman", "source": {"iso3": "OMN", "layer": "ne_admin0"}},
+    "pakistan": {"era_type": "modern", "name": "Pakistan", "source": {"iso3": "PAK", "layer": "ne_admin0"}},
+    "pakistan_pre_1971": {
+      "era_type": "historical",
+      "name": "Pakistan (West and East Pakistan, 1947-1971)",
+      "source": {"members": ["bangladesh", "pakistan"], "type": "union"},
+      "valid_years": [1947, 1971]
+    },
+    "palau": {"era_type": "modern", "name": "Palau", "source": {"iso3": "PLW", "layer": "ne_admin0", "lonlat_fallback": [134.58, 7.51]}},
+    "palestine": {"era_type": "modern", "name": "Palestine", "source": {"adm0_a3": "PSX", "layer": "ne_admin0"}},
+    "panama": {"era_type": "modern", "name": "Panama", "source": {"iso3": "PAN", "layer": "ne_admin0"}},
+    "papua_new_guinea": {"era_type": "modern", "name": "Papua New Guinea", "source": {"iso3": "PNG", "layer": "ne_admin0"}},
+    "paraguay": {"era_type": "modern", "name": "Paraguay", "source": {"iso3": "PRY", "layer": "ne_admin0"}},
+    "peninsular_malaya": {
+      "era_type": "historical",
+      "name": "Peninsular Malaya",
+      "source": {"base": "malaysia", "subtract": ["british_borneo"], "type": "difference"},
+      "valid_years": [1896, 1963]
+    },
+    "peru": {"era_type": "modern", "name": "Peru", "source": {"iso3": "PER", "layer": "ne_admin0"}},
+    "philippines": {"era_type": "modern", "name": "Philippines", "source": {"iso3": "PHL", "layer": "ne_admin0"}},
+    "poland": {"era_type": "modern", "name": "Poland", "source": {"iso3": "POL", "layer": "ne_admin0"}},
+    "portugal": {"era_type": "modern", "name": "Portugal", "source": {"iso3": "PRT", "layer": "ne_admin0"}},
+    "portuguese_goa": {
+      "era_type": "historical",
+      "name": "Portuguese Goa (Estado da Índia - Goa)",
+      "source": {"adm0_a3": "IND", "clip_to": ["india"], "layer": "ne_admin1", "names": ["Goa"]},
+      "valid_years": [1510, 1961]
+    },
+    "portuguese_india": {
+      "era_type": "historical",
+      "name": "Portuguese Settlements in India (Goa, Daman, Diu, Dadra and Nagar Haveli)",
+      "source": {
+        "adm0_a3": "IND",
+        "clip_to": ["india"],
+        "layer": "ne_admin1",
+        "names": ["Dadra and Nagar Haveli and Daman and Diu", "Goa"]
+      },
+      "valid_years": [1510, 1961]
+    },
+    "puerto_rico": {"era_type": "modern", "name": "Puerto Rico", "source": {"adm0_a3": "PRI", "layer": "ne_admin0"}},
+    "qatar": {"era_type": "modern", "name": "Qatar", "source": {"iso3": "QAT", "layer": "ne_admin0"}},
+    "reunion": {"era_type": "modern", "name": "Réunion", "source": {"gu_a3": "REU", "layer": "ne_map_units", "lonlat_fallback": [55.5364, -21.1151]}},
+    "romania": {"era_type": "modern", "name": "Romania", "source": {"iso3": "ROU", "layer": "ne_admin0"}},
+    "russia": {"era_type": "modern", "name": "Russian Federation", "source": {"iso3": "RUS", "layer": "ne_admin0"}},
+    "russia_1500": {
+      "era_type": "historical",
+      "name": "Grand Duchy of Moscow (1495)",
+      "source": {
+        "clip_to": ["russia"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1495.01.01.json",
+        "states": ["Grand Duchy of Moscow", "Principality of Ryazan (Vassal of Moscow)", "Republic of Pskov (Vassal of Moscow)"]
+      },
+      "valid_years": [1478, 1547]
+    },
+    "russia_1650": {
+      "era_type": "historical",
+      "name": "Tsardom of Russia (1679)",
+      "source": {
+        "clip_to": ["belarus", "russia", "ukraine"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1679.01.01.json",
+        "states": ["Qasim Khanate (Russia)", "Tsardom of Russia"]
+      },
+      "valid_years": [1600, 1721]
+    },
+    "russia_1800": {
+      "era_type": "historical",
+      "name": "Russian Empire (1795 Fifth Revision Borders)",
+      "source": {
+        "clip_to": ["belarus", "estonia", "finland", "kazakhstan", "latvia", "lithuania", "russia", "ukraine"],
+        "layer": "russia_1897",
+        "snap_to_host": true,
+        "source_english": [
+          "Amur region", "Arkhangelsk governorate", "Astrakhan governorate", "Black Sea governorate",
+          "Chernigov governorate", "Don Cossack host lands", "Ekaterinoslav governorate", "Enisei governorate",
+          "Estonia governorate", "Grodno governorate", "Irkutsk governorate", "Kaluga governorate",
+          "Kazan governorate", "Kharkov governorate", "Kherson governorate", "Kiev governorate",
+          "Kostroma governorate", "Kovno governorate", "Kuban region", "Kurland governorate",
+          "Kursk governorate", "Livonia governorate", "Minsk governorate", "Mogilev governorate",
+          "Moscow governorate", "Nizhny Novgorod governorate", "Novgorod governorate", "Olonets governorate",
+          "Orel governorate", "Orenburg governorate", "Penza governorate", "Perm governorate",
+          "Podolsk governorate", "Poltava governorate", "Primorskaya region", "Pskov governorate",
+          "Ryazan governorate", "Sakhalin island", "Samara governorate", "Saratov governorate",
+          "Simbirsk governorate", "Smolensk governorate", "St. Petersburg governorate", "Stavropol governorate",
+          "Tambov governorate", "Taurida governorate", "Terek region", "Tobolsk governorate",
+          "Tomsk governorate", "Transbaikal region", "Tula governorate", "Tver governorate",
+          "Ufa governorate", "Ural region", "Viatka governorate", "Vilna governorate",
+          "Vitebsk governorate", "Vladimir governorate", "Volhynian governorate", "Vologda governorate",
+          "Voronezh governorate", "Vyborg governorate", "Yakutsk region", "Yaroslavl governorate"
+        ]
+      },
+      "valid_years": [1795, 1808]
+    },
+    "russia_1900": {
+      "era_type": "historical",
+      "name": "Russian Empire (1897 Census: 50 European Governorates and Siberia)",
+      "source": {
+        "clip_to": ["belarus", "estonia", "latvia", "lithuania", "moldova", "russia", "ukraine"],
+        "layer": "russia_1897",
+        "snap_to_host": true,
+        "source_english": [
+          "Amur region", "Arkhangelsk governorate", "Astrakhan governorate", "Bessarabia governorate",
+          "Chernigov governorate", "Don Cossack host lands", "Ekaterinoslav governorate", "Enisei governorate",
+          "Estonia governorate", "Grodno governorate", "Irkutsk governorate", "Kaluga governorate",
+          "Kazan governorate", "Kharkov governorate", "Kherson governorate", "Kiev governorate",
+          "Kostroma governorate", "Kovno governorate", "Kurland governorate", "Kursk governorate",
+          "Livonia governorate", "Minsk governorate", "Mogilev governorate", "Moscow governorate",
+          "Nizhny Novgorod governorate", "Novgorod governorate", "Olonets governorate", "Orel governorate",
+          "Orenburg governorate", "Penza governorate", "Perm governorate", "Podolsk governorate",
+          "Poltava governorate", "Primorskaya region", "Pskov governorate", "Ryazan governorate",
+          "Sakhalin island", "Samara governorate", "Saratov governorate", "Simbirsk governorate",
+          "Smolensk governorate", "St. Petersburg governorate", "Tambov governorate", "Taurida governorate",
+          "Tobolsk governorate", "Tomsk governorate", "Transbaikal region", "Tula governorate",
+          "Tver governorate", "Ufa governorate", "Viatka governorate", "Vilna governorate",
+          "Vitebsk governorate", "Vladimir governorate", "Volhynian governorate", "Vologda governorate",
+          "Voronezh governorate", "Yakutsk region", "Yaroslavl governorate"
+        ]
+      },
+      "valid_years": [1897, 1914]
+    },
+    "russian_empire": {
+      "era_type": "historical",
+      "name": "Russian Empire (1897 Full Imperial Borders)",
+      "source": {
+        "exclude_countries": ["austria_hungary", "german_empire"],
+        "extra_admin1": [{"adm0_a3": "TUR", "names": ["Ardahan", "Artvin", "Iğdir", "Kars"]}],
+        "members": ["finland", "poland", "ussr"],
+        "subtract_admin1": [{"adm0_a3": "RUS", "names": ["Kaliningrad", "Tuva"]}],
+        "type": "union"
+      },
+      "valid_years": [1815, 1917]
+    },
+    "rwanda": {"era_type": "modern", "name": "Rwanda", "source": {"iso3": "RWA", "layer": "ne_admin0"}},
+    "sabah": {"era_type": "historical", "name": "Sabah (British North Borneo and Labuan)", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Labuan", "Sabah"]}},
+    "samoa": {"era_type": "modern", "name": "Samoa", "source": {"iso3": "WSM", "layer": "ne_admin0", "lonlat_fallback": [-172.1046, -13.759]}},
+    "san_marino": {"era_type": "modern", "name": "San Marino", "source": {"iso3": "SMR", "layer": "ne_admin0", "lonlat_fallback": [12.4578, 43.9424]}},
+    "sao_tome_and_principe": {"era_type": "modern", "name": "São Tomé and Príncipe", "source": {"iso3": "STP", "layer": "ne_admin0", "lonlat_fallback": [6.6131, 0.1864]}},
+    "sarawak": {"era_type": "historical", "name": "Sarawak", "source": {"adm0_a3": "MYS", "clip_to": ["malaysia"], "layer": "ne_admin1", "names": ["Sarawak"]}},
+    "saudi_arabia": {"era_type": "modern", "name": "Saudi Arabia", "source": {"iso3": "SAU", "layer": "ne_admin0"}},
+    "scotland": {"era_type": "modern", "name": "Scotland", "source": {"layer": "ne_subunits", "su_a3": "SCT"}},
+    "senegal": {"era_type": "modern", "name": "Senegal", "source": {"iso3": "SEN", "layer": "ne_admin0"}},
+    "serbia": {"era_type": "modern", "name": "Serbia", "source": {"adm0_a3": "SRB", "layer": "ne_admin0"}},
+    "seychelles": {"era_type": "modern", "name": "Seychelles", "source": {"iso3": "SYC", "layer": "ne_admin0", "lonlat_fallback": [55.492, -4.6796]}},
+    "sierra_leone": {"era_type": "modern", "name": "Sierra Leone", "source": {"iso3": "SLE", "layer": "ne_admin0"}},
+    "singapore": {"era_type": "modern", "name": "Singapore", "source": {"iso3": "SGP", "layer": "ne_admin0", "lonlat_fallback": [103.8198, 1.3521]}},
+    "sint_maarten": {"era_type": "modern", "name": "Sint Maarten", "source": {"adm0_a3": "SXM", "layer": "ne_admin0", "lonlat_fallback": [-63.05, 18.04]}},
+    "slovakia": {"era_type": "modern", "name": "Slovakia", "source": {"iso3": "SVK", "layer": "ne_admin0"}},
+    "slovenia": {"era_type": "modern", "name": "Slovenia", "source": {"iso3": "SVN", "layer": "ne_admin0"}},
+    "solomon_islands": {"era_type": "modern", "name": "Solomon Islands", "source": {"iso3": "SLB", "layer": "ne_admin0"}},
+    "somalia": {"era_type": "modern", "name": "Somalia", "source": {"members": ["british_somaliland", "italian_somaliland"], "type": "union"}},
+    "south_africa": {"era_type": "modern", "name": "South Africa", "source": {"iso3": "ZAF", "layer": "ne_admin0"}},
+    "south_korea": {"era_type": "modern", "name": "South Korea", "source": {"iso3": "KOR", "layer": "ne_admin0"}},
+    "south_sudan": {"era_type": "modern", "name": "South Sudan", "source": {"adm0_a3": "SDS", "layer": "ne_admin0"}},
+    "spain": {"era_type": "modern", "name": "Spain", "source": {"iso3": "ESP", "layer": "ne_admin0"}},
+    "sri_lanka": {"era_type": "modern", "name": "Sri Lanka (Ceylon)", "source": {"iso3": "LKA", "layer": "ne_admin0"}},
+    "st_helena": {"era_type": "modern", "name": "Saint Helena", "source": {"adm0_a3": "SHN", "layer": "ne_admin0", "lonlat_fallback": [-5.7089, -15.965]}},
+    "st_kitts_and_nevis": {"era_type": "modern", "name": "Saint Kitts and Nevis", "source": {"iso3": "KNA", "layer": "ne_admin0", "lonlat_fallback": [-62.783, 17.357]}},
+    "st_lucia": {"era_type": "modern", "name": "Saint Lucia", "source": {"iso3": "LCA", "layer": "ne_admin0", "lonlat_fallback": [-60.9789, 13.9094]}},
+    "st_vincent": {"era_type": "modern", "name": "Saint Vincent and the Grenadines", "source": {"iso3": "VCT", "layer": "ne_admin0", "lonlat_fallback": [-61.2872, 12.9843]}},
+    "straits_settlements": {
+      "era_type": "historical",
+      "name": "Straits Settlements (Singapore, Penang and Malacca)",
+      "source": {"adm0_a3": "MYS", "extra_members": ["singapore"], "layer": "ne_admin1", "names": ["Melaka", "Pulau Pinang"]},
+      "valid_years": [1826, 1946]
+    },
+    "sudan": {"era_type": "modern", "name": "Sudan", "source": {"iso3": "SDN", "layer": "ne_admin0"}},
+    "suriname": {"era_type": "modern", "name": "Suriname", "source": {"iso3": "SUR", "layer": "ne_admin0"}},
+    "swaziland": {"era_type": "modern", "name": "Eswatini (Swaziland)", "source": {"iso3": "SWZ", "layer": "ne_admin0"}},
+    "sweden": {"era_type": "modern", "name": "Sweden", "source": {"iso3": "SWE", "layer": "ne_admin0"}},
+    "switzerland": {"era_type": "modern", "name": "Switzerland", "source": {"iso3": "CHE", "layer": "ne_admin0"}},
+    "syria": {"era_type": "modern", "name": "Syria", "source": {"iso3": "SYR", "layer": "ne_admin0"}},
+    "taiwan": {"era_type": "modern", "name": "Taiwan (Formosa)", "source": {"iso3": "TWN", "layer": "ne_admin0"}},
+    "taiwan_1650": {
+      "era_type": "historical",
+      "name": "Dutch Formosa (1650)",
+      "source": {
+        "clip_to": ["taiwan"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1650.01.01.json",
+        "states": ["Dutch Formosa"]
+      },
+      "valid_years": [1624, 1662]
+    },
+    "tajikistan": {"era_type": "modern", "name": "Tajikistan", "source": {"iso3": "TJK", "layer": "ne_admin0"}},
+    "tanzania": {"era_type": "modern", "name": "Tanzania", "source": {"iso3": "TZA", "layer": "ne_admin0"}},
+    "thailand": {"era_type": "modern", "name": "Thailand (Siam)", "source": {"iso3": "THA", "layer": "ne_admin0"}},
+    "togo": {"era_type": "modern", "name": "Togo", "source": {"iso3": "TGO", "layer": "ne_admin0"}},
+    "tonga": {"era_type": "modern", "name": "Tonga", "source": {"iso3": "TON", "layer": "ne_admin0", "lonlat_fallback": [-175.1982, -21.179]}},
+    "trinidad_and_tobago": {"era_type": "modern", "name": "Trinidad and Tobago", "source": {"iso3": "TTO", "layer": "ne_admin0"}},
+    "tunisia": {"era_type": "modern", "name": "Tunisia", "source": {"iso3": "TUN", "layer": "ne_admin0"}},
+    "turkey": {"era_type": "modern", "name": "Turkey", "source": {"iso3": "TUR", "layer": "ne_admin0"}},
+    "turkmenistan": {"era_type": "modern", "name": "Turkmenistan", "source": {"iso3": "TKM", "layer": "ne_admin0"}},
+    "turks_and_caicos_islands": {"era_type": "modern", "name": "Turks and Caicos Islands", "source": {"adm0_a3": "TCA", "layer": "ne_admin0", "lonlat_fallback": [-71.7979, 21.694]}},
+    "tuvalu": {"era_type": "modern", "name": "Tuvalu", "source": {"iso3": "TUV", "layer": "ne_admin0", "lonlat_fallback": [179.194, -8.519]}},
+    "uganda": {"era_type": "modern", "name": "Uganda", "source": {"iso3": "UGA", "layer": "ne_admin0"}},
+    "uk_1901_gb_ibs": {
+      "era_type": "historical",
+      "name": "Great Britain and Islands in the British Seas (UK 1901 Census)",
+      "source": {"members": ["great_britain", "isle_of_man_and_channel_islands"], "type": "union"},
+      "valid_years": [1851, 1921]
+    },
+    "uk_with_all_ireland": {
+      "era_type": "historical",
+      "name": "United Kingdom of Great Britain and Ireland (1801-1922)",
+      "source": {"members": ["ireland", "united_kingdom"], "type": "union"},
+      "valid_years": [1801, 1922]
+    },
+    "ukraine": {"era_type": "modern", "name": "Ukraine", "source": {"iso3": "UKR", "layer": "ne_admin0"}},
+    "united_arab_emirates": {"era_type": "modern", "name": "United Arab Emirates", "source": {"iso3": "ARE", "layer": "ne_admin0"}},
+    "united_kingdom": {"era_type": "modern", "name": "United Kingdom", "source": {"gu_a3": "GBR", "layer": "ne_map_units"}},
+    "united_states_1860": {
+      "era_type": "historical",
+      "name": "Contiguous United States (1860 Borders)",
+      "source": {"base": "usa", "subtract": ["alaska", "hawaii"], "type": "difference"},
+      "valid_years": [1848, 1958]
+    },
+    "uruguay": {"era_type": "modern", "name": "Uruguay", "source": {"iso3": "URY", "layer": "ne_admin0"}},
+    "us_virgin_islands": {"era_type": "modern", "name": "US Virgin Islands", "source": {"adm0_a3": "VIR", "layer": "ne_admin0", "lonlat_fallback": [-64.8963, 18.3358]}},
+    "usa": {"era_type": "modern", "name": "United States of America", "source": {"adm0_a3": "USA", "layer": "ne_admin0"}},
+    "ussr": {
+      "era_type": "historical",
+      "name": "Union of Soviet Socialist Republics (USSR)",
+      "source": {
+        "members": [
+          "armenia", "azerbaijan", "belarus", "estonia", "georgia",
+          "kazakhstan", "kyrgyzstan", "latvia", "lithuania", "moldova",
+          "russia", "tajikistan", "turkmenistan", "ukraine", "uzbekistan"
+        ],
+        "type": "union"
+      },
+      "valid_years": [1922, 1991]
+    },
+    "uzbekistan": {"era_type": "modern", "name": "Uzbekistan", "source": {"iso3": "UZB", "layer": "ne_admin0"}},
+    "vanuatu": {"era_type": "modern", "name": "Vanuatu", "source": {"iso3": "VUT", "layer": "ne_admin0"}},
+    "venezuela": {"era_type": "modern", "name": "Venezuela", "source": {"iso3": "VEN", "layer": "ne_admin0"}},
+    "venice_1500": {
+      "era_type": "historical",
+      "name": "Republic of Venice (1563 Stato da Terra, Dogado and Stato da Màr incl. Cyprus)",
+      "source": {
+        "clip_to": ["albania", "croatia", "cyprus", "greece", "italy", "montenegro", "slovenia"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1563.01.01.json",
+        "states": ["Cyprus (Venice)", "Republic of Venice"]
+      },
+      "valid_years": [1489, 1571]
+    },
+    "venice_1650": {
+      "era_type": "historical",
+      "name": "Republic of Venice (1642 Stato da Terra, Dogado and Stato da Màr)",
+      "source": {
+        "clip_to": ["albania", "croatia", "greece", "italy", "montenegro", "slovenia"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1642.01.01.json",
+        "states": ["Republic of Venice"]
+      },
+      "valid_years": [1571, 1669]
+    },
+    "venice_1800": {
+      "era_type": "historical",
+      "name": "Republic of Venice (1771-1785 Stato da Terra, Dogado, Istria, Dalmatia and Ionian Islands)",
+      "source": {
+        "clip_to": ["albania", "croatia", "greece", "italy", "montenegro", "slovenia"],
+        "layer": "phersu",
+        "snap_to_host": true,
+        "snapshot": "1771.01.01.json",
+        "states": ["Republic of Venice"]
+      },
+      "valid_years": [1718, 1797]
+    },
+    "vietnam": {"era_type": "modern", "name": "Vietnam", "source": {"iso3": "VNM", "layer": "ne_admin0"}},
+    "wales": {"era_type": "modern", "name": "Wales", "source": {"layer": "ne_subunits", "su_a3": "WLS"}},
+    "west_germany": {
+      "era_type": "historical",
+      "name": "Federal Republic of Germany (West Germany, 1949-1990)",
+      "source": {"base": "germany", "subtract": ["east_germany"], "type": "difference"},
+      "valid_years": [1949, 1990]
+    },
+    "western_sahara": {"era_type": "modern", "name": "Western Sahara", "source": {"adm0_a3": "SAH", "layer": "ne_admin0"}},
+    "yemen": {"era_type": "modern", "name": "Yemen", "source": {"iso3": "YEM", "layer": "ne_admin0"}},
+    "yugoslavia": {
+      "era_type": "historical",
+      "name": "Yugoslavia",
+      "source": {
+        "members": ["bosnia_and_herzegovina", "croatia", "kosovo", "macedonia", "montenegro", "serbia", "slovenia"],
+        "type": "union"
+      },
+      "valid_years": [1918, 1992]
+    },
+    "zaire": {"era_type": "modern", "name": "Democratic Republic of the Congo", "source": {"iso3": "COD", "layer": "ne_admin0"}},
+    "zambia": {"era_type": "modern", "name": "Zambia", "source": {"iso3": "ZMB", "layer": "ne_admin0"}},
+    "zimbabwe": {"era_type": "modern", "name": "Zimbabwe", "source": {"iso3": "ZWE", "layer": "ne_admin0"}}
+  },
+
+  // -- Constituent, sub-imperial and regional territories exported to subadmin_masks.json rather than country_masks.json --
+  "subadmin_entities": [
+    "alaska",
+    "british_borneo",
+    "british_somaliland",
+    "dodecanese",
+    "england",
+    "england_and_wales",
+    "great_britain",
+    "hawaii",
+    "indonesia_outer_islands",
+    "isle_of_man_and_channel_islands",
+    "italian_somaliland",
+    "java_and_madura",
+    "northern_ireland",
+    "peninsular_malaya",
+    "portuguese_goa",
+    "portuguese_india",
+    "sabah",
+    "sarawak",
+    "scotland",
+    "straits_settlements",
+    "wales"
+  ],
+
+  // -- Direct corpus Country field aliases --
+  "aliases": {
+    "british_malaya": "british_malaya_1931",
+    "ceylon": "sri_lanka",
+    "company_raj": "company_raj_1800",
+    "libia_italian_and_foreign_population": "libya",
+    "republic_of_venice": "venice_1800",
+    "russian_empire_borders_1800": "russia_1800",
+    "uk": "uk_1901_gb_ibs",
+    "united_states": "usa"
+  }
+}
