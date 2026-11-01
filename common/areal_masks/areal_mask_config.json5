@@ -1,0 +1,40 @@
+{
+  // -- WGS84 Equirectangular raster grid specification (5-arcminute / 0,083333 deg) --
+  "grid": {
+    "bbox_wgs84": [-180.0, -90.0, 180.0, 90.0],
+    "crs": "EPSG:4326",
+    "height": 2160,
+    "pixels_per_degree": 12.0,
+    "projection": "WGS84 Equirectangular",
+    "raster_method": "scanline_pixel_centre",
+    "width": 4320
+  },
+
+  // -- Input, output and cache paths --
+  "paths": {
+    "cache_dir": "tests/geo_cache",
+    "data_dir": "data",
+    "input_json_dir": "output/json",
+    "output_dir": "output/areal_masks"
+  },
+
+  // -- Output deliverables in output/areal_masks/ --
+  "outputs": {
+    "city_masks_json": "city_masks.json",
+    "country_masks_json": "country_masks.json",
+    "provinces_png": "provinces.png",
+    "subadmin_masks_json": "subadmin_masks.json",
+    "table_masks_json": "table_masks.json"
+  },
+
+  // -- Online geospatial vector source endpoints --
+  "sources": {
+    "ne_admin0": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson",
+    "ne_admin1": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson",
+    "ne_units": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_map_units.geojson"
+  },
+
+  // -- Synthesis palette seed --
+  "palette_seed": 104729
+}
+
