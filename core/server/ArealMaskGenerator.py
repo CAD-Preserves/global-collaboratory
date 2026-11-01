@@ -1,1002 +1,533 @@
-"""Areal Mask Generator Module.
+"""@brief End-to-end orchestrator for the Global Collaboratory WGS84 Equirectangular areal mask pipeline."""
 
-Synthesises 4320x2160 WGS84 Equirectangular areal masks for top-level countries and historical regions.
-Produces provinces.png, country_masks.json, table_masks.json, subadmin_masks.json, and city_masks.json.
-Uses F:/scrapes/phersu/geojson for authoritative historical territory definitions.
-"""
-
-import json
+import glob
 import os
-from pathlib import Path
-import re
 import sys
 import time
-
-# Ensure project root is in sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
 import numpy as np
+import orjson
 from PIL import Image
-import pyjson5
-import requests
-from shapely.geometry import box, shape
-from shapely.ops import unary_union
 
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if REPO_ROOT not in sys.path:
+  sys.path.insert(0, REPO_ROOT)
+
+from core.server.AdminDivisionMaskResolver import AdminDivisionMaskResolver
+from core.server.CityMaskResolver import CityMaskResolver
+from core.server.ConfigLoader import ConfigLoader
+from core.server.CountryMaskResolver import CountryMaskResolver
 from core.server.EquirectangularRasteriser import EquirectangularRasteriser
+from core.server.GeoJsonFetcher import GeoJsonFetcher
+from core.server.ProvinceMapSynthesizer import ProvinceMapSynthesizer
 
 
 class ArealMaskGenerator:
-  """Orchestrator for synthesising WGS84 Equirectangular areal masks with historical border support."""
+  """@brief Orchestrates geospatial fetching, scanline rasterisation, topological snapping, Zobrist partitioning and Collaboratory table mapping."""
 
   def __init__ (self, arg1_root_dir=None, arg2_options=None):
-    """Initialises ArealMaskGenerator with workspace root directory and options.
-
-    @param {str|None} [arg1_root_dir=None] - Repository root directory path.
-    @param {dict|None} [arg2_options=None] - Optional configuration overrides.
     """
-    # Convert from parameters
-    let_root_dir = arg1_root_dir
-    let_options = arg2_options if isinstance(arg2_options, dict) else {}
-
-    # Declare local instance variables
-    let_config_path = ""
-    let_default_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-    self.root_dir = os.path.abspath(let_root_dir) if let_root_dir else let_default_root
-    let_config_path = os.path.join(self.root_dir, "common", "areal_masks", "areal_mask_config.json5")
-
-    with open(let_config_path, "r", encoding="utf-8") as let_file_stream:
-      self.config_obj = pyjson5.decode(let_file_stream.read())
-
-    self.cache_dir = os.path.join(self.root_dir, self.config_obj.get("paths", {}).get("cache_dir", "tests/geo_cache"))
-    self.data_dir = os.path.join(self.root_dir, self.config_obj.get("paths", {}).get("data_dir", "data"))
-    self.input_json_dir = os.path.join(self.root_dir, self.config_obj.get("paths", {}).get("input_json_dir", "output/json"))
-    self.output_dir = os.path.join(self.root_dir, self.config_obj.get("paths", {}).get("output_dir", "output/areal_masks"))
-    self.outputs_cfg = self.config_obj.get("outputs", {})
-    self.phersu_dir = os.path.abspath(self.config_obj.get("paths", {}).get("phersu_dir", "F:/scrapes/phersu/geojson"))
-    self.rasteriser = EquirectangularRasteriser(self.config_obj.get("grid", {}))
-
-    os.makedirs(self.cache_dir, exist_ok=True)
-    os.makedirs(self.output_dir, exist_ok=True)
-
-
-  def a_fetch_or_load_layer (self, arg1_layer_name):
-    """Fetches or loads a GeoJSON layer from local disk cache or online source.
-
-    @param {str} arg1_layer_name - Name of layer key in sources config.
-    @return {dict} Parsed GeoJSON FeatureCollection dictionary.
+    @brief Initialise ArealMaskGenerator with repository root and optional configuration overrides.
+    @param arg1_root_dir Optional repository root path.
+    @param arg2_options Optional dictionary overriding locale or config_subdir.
     """
-    # Convert from parameters
-    let_layer_name = str(arg1_layer_name or "").strip()
+    #Convert from parameters
+    root_dir = arg1_root_dir
+    options = arg2_options if isinstance(arg2_options, dict) else {}
 
-    # Declare local instance variables
-    let_cache_path = os.path.join(self.cache_dir, f"{let_layer_name}.geojson")
-    let_response = None
-    let_sources = self.config_obj.get("sources", {})
-    let_url = str(let_sources.get(let_layer_name, "")).strip()
+    #Initialise options
+    if "config_subdir" not in options:
+      options["config_subdir"] = os.path.join("common", "areal_masks")
+    if "locale" not in options:
+      options["locale"] = "en_gb"
 
-    # Guard clause
-    if os.path.exists(let_cache_path):
-      with open(let_cache_path, "r", encoding="utf-8") as let_file_stream:
-        # Return statement
-        return json.load(let_file_stream)
+    #Declare local instance variables
+    self.admin_resolver = None
+    self.admin_rules_obj = {}
+    self.city_masks_map = {}
+    self.city_resolver = None
+    self.city_rules_obj = {}
+    self.config_loader = ConfigLoader(root_dir, options)
+    self.config_subdir = str(options["config_subdir"])
+    self.country_masks_map = {}
+    self.country_resolver = None
+    self.country_rules_obj = {}
+    self.fetcher = None
+    self.rasteriser = None
+    self.resolved_countries_map = {}
+    self.resolved_divisions_map = {}
+    self.resolved_groups_map = {}
+    self.root_dir = self.config_loader.root_dir
+    self.subadmin_masks_map = {}
+    self.synthesizer = None
+    self.table_masks_map = {}
+    self.table_rules_obj = {}
+    self.unaccounted_items = []
 
-    if not let_url:
-      print(f"Error: No URL configured for geospatial layer: {let_layer_name}")
-      # Return statement
-      return {"features": [], "type": "FeatureCollection"}
-
-    # Function body
-    print(f"Downloading {let_layer_name} from {let_url}...")
-    let_response = requests.get(let_url, timeout=60)
-    with open(let_cache_path, "wb") as let_file_stream:
-      let_file_stream.write(let_response.content)
-
-    # Return statement
-    return let_response.json()
+    areal_cfg = self.config_loader.areal_config_obj
+    self.fetcher = GeoJsonFetcher(self.root_dir, areal_cfg)
+    self.rasteriser = EquirectangularRasteriser(
+      areal_cfg.get("grid", {}),
+      areal_cfg.get("frontier_snap", {})
+    )
+    self.synthesizer = ProvinceMapSynthesizer(self.root_dir, areal_cfg, self.rasteriser)
 
 
-  def b_extract_phersu_geom (self, arg1_file_name, arg2_target_states, arg3_clip_box=None):
-    """Extracts and unions geometries of matching states from a Phersu historical GeoJSON file.
-
-    @param {str} arg1_file_name - Phersu GeoJSON filename (e.g. '1650.01.01.json').
-    @param {list} arg2_target_states - List of state names to extract.
-    @param {shapely.geometry.box|None} [arg3_clip_box=None] - Optional bounding box for spatial filtering.
-    @return {shapely.geometry.base.BaseGeometry|None} Unioned geometry or None.
+  def A_resolveCanonicalGeographies (self):
     """
-    # Convert from parameters
-    let_clip_box = arg3_clip_box
-    let_file_name = str(arg1_file_name or "").strip()
-    let_target_states = set(arg2_target_states) if arg2_target_states else set()
-
-    # Declare local instance variables
-    let_file_path = os.path.join(self.phersu_dir, let_file_name)
-    let_geom = None
-    let_parts = []
-    let_state_name = ""
-
-    # Guard clause
-    if not os.path.exists(let_file_path):
-      print(f"Warning: Phersu file not found at {let_file_path}")
-      # Return statement
-      return None
-
-    # Function body
-    with open(let_file_path, "r", encoding="utf-8") as let_file_stream:
-      let_fc = json.load(let_file_stream)
-
-    for feature in let_fc.get("features", []):
-      let_state_name = feature.get("properties", {}).get("state", "").replace("\n", " ").strip()
-      if let_state_name in let_target_states:
-        let_geom = shape(feature["geometry"])
-        if let_clip_box:
-          let_geom = let_geom.intersection(let_clip_box)
-        if not let_geom.is_empty:
-          let_parts.append(let_geom)
-
-    # Guard clause
-    if not let_parts:
-      # Return statement
-      return None
-
-    # Return statement
-    return unary_union(let_parts)
-
-
-  def c_build_base_entities (self):
-    """Constructs modern sovereign entities and constituent country splits.
-
-    Includes UK constituents, Italy (Venice/Veneto vs Rest), India (Goa vs Rest),
-    Indonesia (Java vs Outer), and Malaysia (Malaya vs Borneo).
-
-    @return {list} List of entity dictionaries with 'entity_id' and 'flat_indices'.
+    @brief Step A: Load declarative rule files from /common/areal_masks/ and resolve all country, city and subadministrative masks.
+    @return Dictionary summarising resolved country, subadmin and city counts.
     """
-    # Declare local instance variables
-    let_admin0_by_a3 = {}
-    let_admin0_fc = self.a_fetch_or_load_layer("ne_admin0")
-    let_admin1_fc = self.a_fetch_or_load_layer("ne_admin1")
-    let_borneo_my_geom = None
-    let_borneo_my_names = {"Labuan", "Sabah", "Sarawak"}
-    let_borneo_my_parts = []
-    let_entities_array = []
-    let_excluded_a3 = {"GBR", "IDN", "IND", "ITA", "MYS"}
-    let_goa_geom = None
-    let_goa_parts = []
-    let_india_full = None
-    let_india_rest_geom = None
-    let_indonesia_full = None
-    let_italy_full = None
-    let_italy_rest_geom = None
-    let_java_geom = None
-    let_java_names = {"Banten", "Jakarta Raya", "Jawa Barat", "Jawa Tengah", "Jawa Timur", "Yogyakarta"}
-    let_java_parts = []
-    let_malaya_geom = None
-    let_malaysia_full = None
-    let_outer_indo_geom = None
-    let_units_by_gu = {}
-    let_units_fc = self.a_fetch_or_load_layer("ne_units")
-    let_veneto_geom = None
-    let_veneto_names = {"Belluno", "Padova", "Rovigo", "Treviso", "Venezia", "Verona", "Vicenza"}
-    let_veneto_parts = []
+    #Declare local instance variables
+    admin_res = {}
+    cfg_dir = os.path.join(self.root_dir, self.config_subdir)
 
-    # Function body
-    for feature in let_admin0_fc.get("features", []):
-      let_a3 = feature.get("properties", {}).get("ADM0_A3")
-      if let_a3:
-        let_admin0_by_a3[let_a3] = feature
+    self.country_rules_obj = self.config_loader.loadJson5File(os.path.join(cfg_dir, "country_rules.json5"))
+    self.admin_rules_obj = self.config_loader.loadJson5File(os.path.join(cfg_dir, "admin_division_rules.json5"))
+    self.city_rules_obj = self.config_loader.loadJson5File(os.path.join(cfg_dir, "city_rules.json5"))
+    self.table_rules_obj = self.config_loader.loadJson5File(os.path.join(cfg_dir, "table_rules.json5"))
 
-    for feature in let_units_fc.get("features", []):
-      let_gu = feature.get("properties", {}).get("GU_A3")
-      if let_gu:
-        let_units_by_gu[let_gu] = feature
+    self.country_resolver = CountryMaskResolver(self.fetcher, self.rasteriser, self.country_rules_obj)
+    self.resolved_countries_map = self.country_resolver.A_resolveAllCountries()
+    print(self.config_loader.formatLocalisedString("masks_countries_resolved", [len(self.resolved_countries_map)]))
 
-    # 1. Base sovereign countries from Natural Earth admin 0
-    for feature in let_admin0_fc.get("features", []):
-      let_props = feature.get("properties", {})
-      let_a3 = let_props.get("ADM0_A3")
-      if let_a3 in let_excluded_a3:
-        continue
-      let_name = let_props.get("ADMIN") or let_props.get("NAME")
-      let_key = self.to_snake_key(let_name)
-      let_indices = self.rasteriser.A_rasteriseGeometry(shape(feature["geometry"]))
-      if let_indices.size > 0:
-        let_entities_array.append({"entity_id": let_key, "flat_indices": let_indices})
+    self.city_resolver = CityMaskResolver(self.fetcher, self.city_rules_obj)
+    self.city_masks_map = self.city_resolver.A_resolveAllCities()
+    print(self.config_loader.formatLocalisedString("masks_cities_resolved", [len(self.city_masks_map)]))
 
-    # 2. Partition United Kingdom into England, Scotland, Wales, Northern Ireland
-    for gu_code, constituent_key in [("ENG", "england"), ("SCT", "scotland"), ("WLS", "wales"), ("NIR", "northern_ireland")]:
-      if gu_code in let_units_by_gu:
-        let_indices = self.rasteriser.A_rasteriseGeometry(shape(let_units_by_gu[gu_code]["geometry"]))
-        let_entities_array.append({"entity_id": constituent_key, "flat_indices": let_indices})
+    self.admin_resolver = AdminDivisionMaskResolver(
+      self.fetcher,
+      self.rasteriser,
+      self.country_resolver,
+      self.city_resolver,
+      self.admin_rules_obj
+    )
+    admin_res = self.admin_resolver.A_resolveAllAdminDivisions()
+    self.resolved_divisions_map = admin_res["divisions"]
+    self.resolved_groups_map = admin_res["groups"]
+    print(self.config_loader.formatLocalisedString("masks_divisions_resolved", [len(self.resolved_divisions_map), len(self.admin_resolver.partition_sets_cfg)]))
 
-    # 3. Partition Italy into Venice (Veneto) and Rest of Italy
-    if "ITA" in let_admin0_by_a3:
-      let_italy_full = shape(let_admin0_by_a3["ITA"]["geometry"])
-      for feature in let_admin1_fc.get("features", []):
-        if feature.get("properties", {}).get("adm0_a3") == "ITA" and feature.get("properties", {}).get("name") in let_veneto_names:
-          let_veneto_parts.append(shape(feature["geometry"]))
-      let_veneto_geom = unary_union(let_veneto_parts)
-      let_italy_rest_geom = let_italy_full.difference(let_veneto_geom)
-      let_entities_array.append({"entity_id": "venice", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_veneto_geom)})
-      let_entities_array.append({"entity_id": "italy_rest", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_italy_rest_geom)})
-
-    # 4. Partition India into Goa and Rest of India
-    if "IND" in let_admin0_by_a3:
-      let_india_full = shape(let_admin0_by_a3["IND"]["geometry"])
-      for feature in let_admin1_fc.get("features", []):
-        if feature.get("properties", {}).get("adm0_a3") == "IND" and feature.get("properties", {}).get("name") == "Goa":
-          let_goa_parts.append(shape(feature["geometry"]))
-      let_goa_geom = unary_union(let_goa_parts)
-      let_india_rest_geom = let_india_full.difference(let_goa_geom)
-      let_entities_array.append({"entity_id": "goa", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_goa_geom)})
-      let_entities_array.append({"entity_id": "india_rest", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_india_rest_geom)})
-
-    # 5. Partition Indonesia into Java and Outer Islands
-    if "IDN" in let_admin0_by_a3:
-      let_indonesia_full = shape(let_admin0_by_a3["IDN"]["geometry"])
-      for feature in let_admin1_fc.get("features", []):
-        if feature.get("properties", {}).get("adm0_a3") == "IDN" and feature.get("properties", {}).get("name") in let_java_names:
-          let_java_parts.append(shape(feature["geometry"]))
-      let_java_geom = unary_union(let_java_parts)
-      let_outer_indo_geom = let_indonesia_full.difference(let_java_geom)
-      let_entities_array.append({"entity_id": "java", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_java_geom)})
-      let_entities_array.append({"entity_id": "indonesia_outer_islands", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_outer_indo_geom)})
-
-    # 6. Partition Malaysia into British Malaya and British Borneo
-    if "MYS" in let_admin0_by_a3:
-      let_malaysia_full = shape(let_admin0_by_a3["MYS"]["geometry"])
-      for feature in let_admin1_fc.get("features", []):
-        if feature.get("properties", {}).get("adm0_a3") == "MYS" and feature.get("properties", {}).get("name") in let_borneo_my_names:
-          let_borneo_my_parts.append(shape(feature["geometry"]))
-      let_borneo_my_geom = unary_union(let_borneo_my_parts)
-      let_malaya_geom = let_malaysia_full.difference(let_borneo_my_geom)
-      let_entities_array.append({"entity_id": "british_malaya", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_malaya_geom)})
-      let_entities_array.append({"entity_id": "british_borneo_malaysia", "flat_indices": self.rasteriser.A_rasteriseGeometry(let_borneo_my_geom)})
-
-    # Return statement
-    return let_entities_array
-
-
-  def d_build_historical_entities (self, arg1_base_entities_array):
-    """Extracts and rasterises historical geometries directly from F:/scrapes/phersu/geojson.
-
-    Captures Brazil 1650 (coastal captaincies), Brazil 1800 (viceroyalty),
-    USA 1800 (16 states + NW/SW territories), France 1900 (Third Republic),
-    Bolivia 1900, British India 1900, Greece 1920 (Treaty of Sevres),
-    Russia 1500 (Moscow), Russia 1650 (Muscovy), Russian Empire 1800/1900, and Venice.
-
-    @param {list} arg1_base_entities_array - Base modern entities list.
-    @return {list} List of historical entity dictionaries.
-    """
-    # Convert from parameters
-    let_base_entities = arg1_base_entities_array if isinstance(arg1_base_entities_array, list) else []
-
-    # Declare local instance variables
-    let_b1650_geom = None
-    let_b1800_geom = None
-    let_bol1900_geom = None
-    let_brazil_modern_idx = np.zeros(0, dtype=np.int32)
-    let_fra1900_geom = None
-    let_france_modern_idx = np.zeros(0, dtype=np.int32)
-    let_gre1920_geom = None
-    let_historical_entities = []
-    let_india_box = box(60, 5, 100, 38)
-    let_master_land_idx = np.zeros(0, dtype=np.int32)
-    let_raj_parts = []
-    let_rus1500_geom = None
-    let_rus1650_geom = None
-    let_rus1800_geom = None
-    let_rus1900_geom = None
-    let_sa_box = box(-80, -35, -30, 10)
-    let_usa1800_geom = None
-    let_usa_modern_idx = np.zeros(0, dtype=np.int32)
-    let_v1500_geom = None
-    let_v1650_geom = None
-
-    # Function body
-    let_master_land_idx = np.unique(np.concatenate([e["flat_indices"] for e in let_base_entities]))
-
-    for entity in let_base_entities:
-      if entity["entity_id"] == "brazil":
-        let_brazil_modern_idx = entity["flat_indices"]
-      if entity["entity_id"] == "united_states_of_america":
-        let_usa_modern_idx = entity["flat_indices"]
-      if entity["entity_id"] == "france":
-        let_france_modern_idx = entity["flat_indices"]
-
-    # 1. Brazil 1650: Portuguese Brazil + Dutch West India Company
-    let_b1650_geom = self.b_extract_phersu_geom("1650.01.01.json", ["Portuguese Brazil", "Dutch West India Company"], let_sa_box)
-    if let_b1650_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_b1650_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_brazil_modern_idx)
-      let_historical_entities.append({"entity_id": "brazil_1650", "flat_indices": let_idx})
-
-    # 2. Brazil 1800: Portuguese Brazil in South America
-    let_b1800_geom = self.b_extract_phersu_geom("1800.01.01.json", ["Portuguese Brazil"], let_sa_box)
-    if let_b1800_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_b1800_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_brazil_modern_idx)
-      let_historical_entities.append({"entity_id": "brazil_1800", "flat_indices": let_idx})
-
-    # 3. United States 1800: USA in 1800
-    let_usa1800_geom = self.b_extract_phersu_geom("1800.01.01.json", ["USA"])
-    if let_usa1800_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_usa1800_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_usa_modern_idx)
-      let_historical_entities.append({"entity_id": "united_states_1800", "flat_indices": let_idx})
-
-    # 4. France 1900: French Third Republic (without Alsace-Lorraine)
-    let_fra1900_geom = self.b_extract_phersu_geom("1900.01.01.json", ["French Third Republic"])
-    if let_fra1900_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_fra1900_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_france_modern_idx)
-      let_historical_entities.append({"entity_id": "france_1900", "flat_indices": let_idx})
-
-    # 5. Bolivia 1900: Republic of Bolivia (including Acre)
-    let_bol1900_geom = self.b_extract_phersu_geom("1900.01.01.json", ["Republic of Bolivia"])
-    if let_bol1900_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_bol1900_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "bolivia_1900", "flat_indices": let_idx})
-
-    # 6. British India 1900: British India + Princely States
-    let_p1900 = os.path.join(self.phersu_dir, "1900.01.01.json")
-    if os.path.exists(let_p1900):
-      with open(let_p1900, "r", encoding="utf-8") as let_fs:
-        let_d1900 = json.load(let_fs)
-      for feature in let_d1900.get("features", []):
-        let_s = feature.get("properties", {}).get("state", "").replace("\n", " ")
-        if "British India" in let_s or "(Princely State)" in let_s:
-          let_g = shape(feature["geometry"])
-          if let_g.intersects(let_india_box):
-            let_raj_parts.append(let_g.intersection(let_india_box))
-      if let_raj_parts:
-        let_raw_idx = self.rasteriser.A_rasteriseGeometry(unary_union(let_raj_parts))
-        let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-        let_historical_entities.append({"entity_id": "india_1900", "flat_indices": let_idx})
-
-    # 7. Greece 1920: Kingdom of Greece + Eastern Thrace/Smyrna occupation
-    let_gre1920_geom = self.b_extract_phersu_geom("1920.01.01.json", ["Kingdom of Greece", "Greece (Military Occupation)"])
-    if let_gre1920_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_gre1920_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "greece_1920", "flat_indices": let_idx})
-
-    # 8. Russia 1500: Grand Duchy of Moscow
-    let_rus1500_geom = self.b_extract_phersu_geom("1500.01.01.json", ["Grand Duchy of Moscow"])
-    if let_rus1500_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1500_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "russia_1500", "flat_indices": let_idx})
-
-    # 9. Russia 1650: Tsardom of Russia
-    let_rus1650_geom = self.b_extract_phersu_geom("1650.01.01.json", ["Tsardom of Russia"])
-    if let_rus1650_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1650_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "russia_1650", "flat_indices": let_idx})
-
-    # 10. Russian Empire 1800: Russian Empire
-    let_rus1800_geom = self.b_extract_phersu_geom("1800.01.01.json", ["Russian Empire"])
-    if let_rus1800_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1800_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "russia_1800", "flat_indices": let_idx})
-
-    # 11. Russian Empire 1900: Russian Empire
-    let_rus1900_geom = self.b_extract_phersu_geom("1900.01.01.json", ["Russian Empire"])
-    if let_rus1900_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_rus1900_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "russia_1900", "flat_indices": let_idx})
-
-    # 12. Venice 1500, 1650, 1800: Republic of Venice
-    let_v1500_geom = self.b_extract_phersu_geom("1500.01.01.json", ["Republic of Venice"])
-    if let_v1500_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_v1500_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "venice_1500", "flat_indices": let_idx})
-
-    let_v1650_geom = self.b_extract_phersu_geom("1650.01.01.json", ["Republic of Venice"])
-    if let_v1650_geom:
-      let_raw_idx = self.rasteriser.A_rasteriseGeometry(let_v1650_geom)
-      let_idx = np.intersect1d(let_raw_idx, let_master_land_idx)
-      let_historical_entities.append({"entity_id": "venice_1650", "flat_indices": let_idx})
-
-    for entity in let_base_entities:
-      if entity["entity_id"] == "venice":
-        let_historical_entities.append({"entity_id": "venice_1800", "flat_indices": entity["flat_indices"]})
-
-    # Return statement
-    return let_historical_entities
-
-
-  def e_partition_equivalence_classes (self, arg1_entities_array, arg2_png_path, arg3_seed):
-    """Partitions overlapping entities into atomic equivalence classes with certified zero collisions.
-
-    @param {list} arg1_entities_array - Array of entity dicts with 'entity_id' and 'flat_indices'.
-    @param {str} arg2_png_path - Output file path for provinces.png.
-    @param {int} arg3_seed - Deterministic palette seed.
-    @return {dict} Metrics and mapping of entity_id -> list of [R, G, B] colour codes.
-    """
-    # Convert from parameters
-    let_entities_array = arg1_entities_array if isinstance(arg1_entities_array, list) else []
-    let_png_path = str(arg2_png_path or "")
-    let_seed = int(arg3_seed)
-
-    # Declare local instance variables
-    let_active_px = None
-    let_deg = np.zeros(self.rasteriser.total_pixels, dtype=np.uint16)
-    let_entity_rgb_out = {}
-    let_flat_rgb = np.zeros((self.rasteriser.total_pixels, 3), dtype=np.uint8)
-    let_h1 = np.zeros(self.rasteriser.total_pixels, dtype=np.uint64)
-    let_h2 = np.zeros(self.rasteriser.total_pixels, dtype=np.uint64)
-    let_num_ents = len(let_entities_array)
-    let_palette = []
-    let_pixel_to_zone = np.zeros(self.rasteriser.total_pixels, dtype=np.int32)
-    let_rng = np.random.default_rng(let_seed)
-    let_z1 = let_rng.integers(1, (1 << 63) - 1, size=max(1, let_num_ents), dtype=np.uint64)
-    let_z2 = let_rng.integers(1, (1 << 63) - 1, size=max(1, let_num_ents), dtype=np.uint64)
-
-    # Function body
-    for i in range(let_num_ents):
-      let_idx = let_entities_array[i]["flat_indices"]
-      if let_idx.size > 0:
-        let_h1[let_idx] ^= let_z1[i]
-        let_h2[let_idx] ^= let_z2[i]
-        let_deg[let_idx] += 1
-
-    let_active_px = np.flatnonzero(let_deg > 0)
-    if let_active_px.size == 0:
-      self.rasteriser.B_exportRgbPng(let_flat_rgb.reshape(self.rasteriser.height, self.rasteriser.width, 3), let_png_path)
-      # Return statement
-      return {"covered_pixels": 0, "entity_rgb_masks": let_entity_rgb_out, "province_count": 0}
-
-    let_sig_dtype = np.dtype([("h1", "<u8"), ("h2", "<u8"), ("deg", "<u2")])
-    let_sigs = np.empty(let_active_px.size, dtype=let_sig_dtype)
-    let_sigs["h1"] = let_h1[let_active_px]
-    let_sigs["h2"] = let_h2[let_active_px]
-    let_sigs["deg"] = let_deg[let_active_px]
-
-    let_unique_sigs, let_inv_idx = np.unique(let_sigs, return_inverse=True)
-    let_num_zones = int(let_unique_sigs.size)
-    let_pixel_to_zone[let_active_px] = let_inv_idx.astype(np.int32) + 1
-
-    let_order = np.argsort(let_inv_idx, kind="mergesort")
-    let_sorted_active_px = let_active_px[let_order]
-    let_sorted_inv = let_inv_idx[let_order]
-    let_zone_splits = np.flatnonzero(np.diff(let_sorted_inv)) + 1
-    let_zone_pixel_arrays = np.split(let_sorted_active_px, let_zone_splits)
-
-    let_palette = self.generate_palette(let_num_zones, let_seed)
-
-    for i in range(let_num_ents):
-      let_eid = let_entities_array[i]["entity_id"]
-      let_idx = let_entities_array[i]["flat_indices"]
-      if let_idx.size == 0:
-        let_entity_rgb_out[let_eid] = []
-        continue
-      let_z_hits = np.unique(let_pixel_to_zone[let_idx])
-      let_rgb_tuples = []
-      for x in range(let_z_hits.size):
-        let_zi = int(let_z_hits[x]) - 1
-        if let_zi >= 0:
-          let_rgb_c = let_palette[let_zi]
-          let_rgb_tuples.append((int(let_rgb_c[0]), int(let_rgb_c[1]), int(let_rgb_c[2])))
-      let_rgb_tuples.sort()
-      let_entity_rgb_out[let_eid] = [[t[0], t[1], t[2]] for t in let_rgb_tuples]
-
-    for i in range(let_num_zones):
-      let_z_px = let_zone_pixel_arrays[i]
-      let_rgb_c = let_palette[i]
-      let_flat_rgb[let_z_px, 0] = let_rgb_c[0]
-      let_flat_rgb[let_z_px, 1] = let_rgb_c[1]
-      let_flat_rgb[let_z_px, 2] = let_rgb_c[2]
-
-    self.rasteriser.B_exportRgbPng(let_flat_rgb.reshape(self.rasteriser.height, self.rasteriser.width, 3), let_png_path)
-
-    # Return statement
+    #Return statement
     return {
-      "covered_pixels": int(let_active_px.size),
-      "entity_rgb_masks": let_entity_rgb_out,
-      "province_count": let_num_zones
+      "cities": len(self.city_masks_map),
+      "countries": len(self.resolved_countries_map),
+      "divisions": len(self.resolved_divisions_map)
     }
 
 
-  def f_build_country_masks (self, arg1_entity_rgb_masks):
-    """Compiles the comprehensive country_masks.json dictionary with historical and regional aliases.
-
-    @param {dict} arg1_entity_rgb_masks - Equivalence class RGB mask mapping.
-    @return {dict} Flat dictionary mapping country identifier to list of [R, G, B] triplets.
+  def B_synthesiseProvinceRaster (self):
     """
-    # Convert from parameters
-    let_entity_rgb_masks = arg1_entity_rgb_masks if isinstance(arg1_entity_rgb_masks, dict) else {}
-
-    # Declare local instance variables
-    let_country_masks = {}
-
-    # Function body
-    # 1. Base atomic and historical entities
-    for key, colours in sorted(let_entity_rgb_masks.items()):
-      let_country_masks[key] = colours
-
-    # 2. United Kingdom aliases and constituents
-    let_eng_col = let_entity_rgb_masks.get("england", [])
-    let_nir_col = let_entity_rgb_masks.get("northern_ireland", [])
-    let_sct_col = let_entity_rgb_masks.get("scotland", [])
-    let_wls_col = let_entity_rgb_masks.get("wales", [])
-    let_uk_cols = sorted(set(tuple(c) for c in (let_eng_col + let_sct_col + let_wls_col + let_nir_col)))
-    let_gb_cols = sorted(set(tuple(c) for c in (let_eng_col + let_sct_col + let_wls_col)))
-
-    let_country_masks["united_kingdom"] = [[t[0], t[1], t[2]] for t in let_uk_cols]
-    let_country_masks["uk"] = let_country_masks["united_kingdom"]
-    let_country_masks["great_britain"] = [[t[0], t[1], t[2]] for t in let_gb_cols]
-
-    # 3. Italy and Venice aliases
-    let_ita_rest = let_entity_rgb_masks.get("italy_rest", [])
-    let_venice = let_entity_rgb_masks.get("venice", [])
-    let_italy_cols = sorted(set(tuple(c) for c in (let_ita_rest + let_venice)))
-
-    let_country_masks["italy"] = [[t[0], t[1], t[2]] for t in let_italy_cols]
-    let_country_masks["republic_of_venice"] = let_venice
-
-    # 4. India and Goa aliases
-    let_goa = let_entity_rgb_masks.get("goa", [])
-    let_ind_rest = let_entity_rgb_masks.get("india_rest", [])
-    let_india_cols = sorted(set(tuple(c) for c in (let_ind_rest + let_goa)))
-
-    let_country_masks["india"] = [[t[0], t[1], t[2]] for t in let_india_cols]
-    let_country_masks["company_raj"] = let_country_masks["india"]
-    let_country_masks["deccan"] = let_country_masks["india"]
-    let_country_masks["bihar"] = let_country_masks["india"]
-    let_country_masks["portuguese_goa"] = let_goa
-
-    # 5. Indonesia, Java, and Outer Islands
-    let_java = let_entity_rgb_masks.get("java", [])
-    let_outer_indo = let_entity_rgb_masks.get("indonesia_outer_islands", [])
-    let_indo_cols = sorted(set(tuple(c) for c in (let_java + let_outer_indo)))
-
-    let_country_masks["indonesia"] = [[t[0], t[1], t[2]] for t in let_indo_cols]
-    let_country_masks["java_and_madura"] = let_java
-    let_country_masks["java_1650"] = let_java
-    let_country_masks["java_1800"] = let_java
-    let_country_masks["java_1900"] = let_java
-
-    # 6. Malaysia, Malaya, and Borneo
-    let_brunei = let_entity_rgb_masks.get("brunei", [])
-    let_malaya = let_entity_rgb_masks.get("british_malaya", [])
-    let_my_borneo = let_entity_rgb_masks.get("british_borneo_malaysia", [])
-    let_borneo_cols = sorted(set(tuple(c) for c in (let_my_borneo + let_brunei)))
-    let_malaysia_cols = sorted(set(tuple(c) for c in (let_malaya + let_my_borneo)))
-
-    let_country_masks["malaysia"] = [[t[0], t[1], t[2]] for t in let_malaysia_cols]
-    let_country_masks["malaya"] = let_malaya
-    let_country_masks["british_borneo"] = [[t[0], t[1], t[2]] for t in let_borneo_cols]
-    let_country_masks["borneo"] = let_country_masks["british_borneo"]
-
-    # 7. Ceylon / Sri Lanka
-    let_ceylon = let_entity_rgb_masks.get("sri_lanka", [])
-    let_country_masks["ceylon"] = let_ceylon
-    let_country_masks["ceylon_1650"] = let_ceylon
-
-    # 8. United States aliases
-    let_usa = let_entity_rgb_masks.get("united_states_of_america", [])
-    let_country_masks["united_states"] = let_usa
-    let_country_masks["usa"] = let_usa
-
-    # 9. Brazil aliases
-    let_brazil = let_entity_rgb_masks.get("brazil", [])
-    let_country_masks["brazil_2000"] = let_brazil
-
-    # 10. Russia and Russian Empire aliases
-    let_russia = let_entity_rgb_masks.get("russia", [])
-    let_country_masks["russia_2000"] = let_russia
-    let_country_masks["russian_empire"] = let_entity_rgb_masks.get("russia_1900", let_russia)
-
-    # 11. Bolivia aliases
-    let_bolivia = let_entity_rgb_masks.get("bolivia", [])
-    let_country_masks["bolivia_2000"] = let_bolivia
-
-    # 12. France and Netherlands
-    let_france = let_entity_rgb_masks.get("france", [])
-    let_country_masks["france_2000"] = let_france
-    let_nld = let_entity_rgb_masks.get("netherlands", [])
-    let_country_masks["the_netherlands"] = let_nld
-
-    # Return statement
-    return let_country_masks
-
-
-  def g_build_table_masks (self, arg1_country_masks):
-    """Compiles the comprehensive table_masks.json map covering all spreadsheet datasets with era awareness.
-
-    @param {dict} arg1_country_masks - Country masks dictionary.
-    @return {dict} Dictionary mapping table identifiers to 'country:<country_key>'.
+    @brief Step B: Synthesise provinces.png via double-64-bit Zobrist hashing and assemble country_masks_map and subadmin_masks_map.
+    @return Dictionary containing province_count, covered_pixels and png_path.
     """
-    # Convert from parameters
-    let_country_masks = arg1_country_masks if isinstance(arg1_country_masks, dict) else {}
+    #Declare local instance variables
+    div_rgb_sets = {}
+    rgb_lookup = {}
+    synth_info = {}
 
-    # Declare local instance variables
-    let_country_key = ""
-    let_folder_name = ""
-    let_json_files = []
-    let_raw_dir = os.path.join(self.input_json_dir, "raw_tables")
-    let_stem = ""
-    let_table_masks = {}
+    synth_info = self.synthesizer.A_synthesiseProvincesPng(self.resolved_countries_map, self.resolved_divisions_map)
+    rgb_lookup = self.synthesizer.B_registerAdminGroupMasks(self.resolved_divisions_map)
+    print(self.config_loader.formatLocalisedString("masks_synthesised", [synth_info["province_count"], synth_info["covered_pixels"]]))
 
-    # Guard clause
-    if not os.path.exists(let_raw_dir):
-      print(f"Warning: Raw tables directory not found at {let_raw_dir}")
-      # Return statement
-      return let_table_masks
+    self.country_masks_map = {}
+    self.subadmin_masks_map = {}
 
-    # Function body
-    let_json_files = sorted(f for f in os.listdir(let_raw_dir) if f.endswith(".json"))
+    for local_cid in sorted(self.resolved_countries_map.keys()):
+      local_rgbs = rgb_lookup.get(local_cid, [])
+      if self.country_resolver.isSubadminEntity(local_cid):
+        self.subadmin_masks_map[local_cid] = local_rgbs
+      else:
+        self.country_masks_map[local_cid] = local_rgbs
 
-    for json_file in let_json_files:
-      let_stem = Path(json_file).stem
-      let_folder_name = self.find_source_folder(let_stem)
-      let_country_key = self.resolve_table_country(let_stem, let_folder_name)
-
-      # Fallback to general country if era key missing
-      if let_country_key not in let_country_masks and "_" in let_country_key:
-        let_fallback = let_country_key.split("_")[0]
-        if let_fallback in let_country_masks:
-          let_country_key = let_fallback
-
-      let_target = f"country:{let_country_key}"
-
-      # Map filename and stem
-      let_table_masks[let_stem] = let_target
-      let_table_masks[json_file] = let_target
-
-      # Map directory-qualified variants
-      let_table_masks[f"raw_tables/{json_file}"] = let_target
-      let_table_masks[f"sectoral_harmonised/{json_file}"] = let_target
-
-      if let_folder_name:
-        let_table_masks[f"{let_folder_name}:{let_stem}"] = let_target
-        let_table_masks[f"{let_folder_name}/{json_file}"] = let_target
-
-    # Return statement
-    return let_table_masks
-
-
-  def generate_palette (self, arg1_count, arg2_seed):
-    """Generates a deterministic, collision-free, high-visibility non-black RGB palette.
-
-    @param {int} arg1_count - Number of distinct colours required.
-    @param {int} arg2_seed - Integer seed controlling coprime stride generation.
-    @return {list} List of [R, G, B] integer triplets.
-    """
-    # Convert from parameters
-    let_count = max(0, int(arg1_count))
-    let_seed = int(arg2_seed)
-
-    # Declare local instance variables
-    let_b_ch = 0
-    let_colours_array = []
-    let_g_ch = 0
-    let_r_ch = 0
-    let_state = (let_seed*2654435761) & 0xFFFFFF
-    let_step = 1046527
-    let_used_codes = set([0])
-
-    # Function body
-    for _ in range(let_count*4 + 64):
-      if len(let_colours_array) >= let_count:
-        break
-      let_state = (let_state + let_step) & 0xFFFFFF
-      if let_state in let_used_codes:
+    for local_did, div_rec in sorted(self.resolved_divisions_map.items()):
+      ckey = str(div_rec.get("canonical_key") or "")
+      if not ckey:
         continue
-      let_r_ch = (let_state >> 16) & 0xFF
-      let_g_ch = (let_state >> 8) & 0xFF
-      let_b_ch = let_state & 0xFF
-      if max(let_r_ch, let_g_ch, let_b_ch) < 32:
+      div_rgbs = rgb_lookup.get(local_did, [])
+      for i in range(len(div_rgbs)):
+        div_rgb_sets.setdefault(ckey, set()).add(tuple(div_rgbs[i]))
+
+    for local_ck, rgb_set in sorted(div_rgb_sets.items()):
+      self.subadmin_masks_map[local_ck] = [[int(t[0]), int(t[1]), int(t[2])] for t in sorted(rgb_set)]
+
+    for local_parent in sorted(self.resolved_groups_map.keys()):
+      if local_parent not in self.subadmin_masks_map:
+        grp_rgbs = rgb_lookup.get(f"canonical_group:{local_parent}", [])
+        if grp_rgbs:
+          self.subadmin_masks_map[local_parent] = grp_rgbs
+
+    #Return statement
+    return synth_info
+
+
+  def C_mapCollaboratoryTables (self):
+    """
+    @brief Step C: Scan all 98 raw_tables and sectoral_harmonised JSON files and map every dataset and sub-table series to its canonical mask.
+    @return Flat table_masks_map dictionary.
+    """
+    #Declare local instance variables
+    country_series_cfg = self.table_rules_obj.get("country_series", {})
+    dataset_countries_cfg = self.table_rules_obj.get("dataset_countries", {})
+    dataset_localities_cfg = self.table_rules_obj.get("dataset_localities", {})
+    dataset_regions_cfg = self.table_rules_obj.get("dataset_regions", {})
+    datasets_cfg = self.table_rules_obj.get("datasets", {})
+    harm_dir = os.path.join(self.root_dir, str(self.config_loader.areal_config_obj.get("paths", {}).get("harmonised_json_dir", "output/json/sectoral_harmonised")))
+    harm_files = sorted(glob.glob(os.path.join(harm_dir, "*.json")))
+    locality_series_cfg = self.table_rules_obj.get("locality_series", {})
+    raw_dir = os.path.join(self.root_dir, str(self.config_loader.areal_config_obj.get("paths", {}).get("raw_json_dir", "output/json/raw_tables")))
+    raw_files = sorted(glob.glob(os.path.join(raw_dir, "*.json")))
+    region_series_cfg = self.table_rules_obj.get("region_series", {})
+    stems_map = {}
+
+    self.table_masks_map = {}
+    self.unaccounted_items = []
+
+    for i in range(len(raw_files)):
+      local_fn = os.path.basename(raw_files[i])
+      local_stem = os.path.splitext(local_fn)[0]
+      stems_map.setdefault(local_stem, {})["raw_path"] = raw_files[i]
+
+    for i in range(len(harm_files)):
+      local_fn = os.path.basename(harm_files[i])
+      local_stem = os.path.splitext(local_fn)[0]
+      stems_map.setdefault(local_stem, {})["harm_path"] = harm_files[i]
+
+    for local_stem in sorted(stems_map.keys()):
+      local_info = stems_map[local_stem]
+      local_fn = f"{local_stem}.json"
+      ds_target = datasets_cfg.get(local_stem) or datasets_cfg.get(local_fn)
+
+      if ds_target is None or not self.isValidMaskTarget(ds_target):
+        sys.stderr.write(f"Console error: unaccounted or invalid dataset target for '{local_stem}': {ds_target}\n")
+        self.unaccounted_items.append(f"dataset:{local_stem}")
         continue
-      let_used_codes.add(let_state)
-      let_colours_array.append([int(let_r_ch), int(let_g_ch), int(let_b_ch)])
 
-    # Return statement
-    return let_colours_array
+      norm_ds_target = self.normaliseTargetSpec(ds_target)
+      self.table_masks_map[local_fn] = norm_ds_target
+      self.table_masks_map[local_stem] = norm_ds_target
+      if "raw_path" in local_info:
+        self.table_masks_map[f"raw_tables/{local_stem}"] = norm_ds_target
+      if "harm_path" in local_info:
+        self.table_masks_map[f"sectoral_harmonised/{local_stem}"] = norm_ds_target
+
+      if "raw_path" in local_info:
+        sub_meta = self.extractRawTableSubEntities(local_info["raw_path"])
+
+        if len(sub_meta["countries"]) > 1:
+          for x in range(len(sub_meta["countries"])):
+            c_slug = self.fetcher.normaliseAsciiSlug(sub_meta["countries"][x])
+            if not c_slug:
+              continue
+            c_target = (
+              dataset_countries_cfg.get(f"{local_stem}::{c_slug}")
+              or country_series_cfg.get(c_slug)
+            )
+            if c_target is None:
+              alias_cid = self.country_resolver.B_resolveCountryAlias(c_slug)
+              if alias_cid:
+                c_target = self.country_resolver.formatEntityMaskRef(alias_cid)
+            if c_target is not None and self.isValidMaskTarget(c_target):
+              self.table_masks_map[f"{local_stem}.country:{c_slug}"] = self.normaliseTargetSpec(c_target)
+            else:
+              sys.stderr.write(f"Console error: unaccounted multi-country series '{local_stem}.country:{c_slug}'\n")
+              self.unaccounted_items.append(f"{local_stem}.country:{c_slug}")
+
+        for x in range(len(sub_meta["regions"])):
+          r_slug = self.fetcher.normaliseAsciiSlug(sub_meta["regions"][x])
+          if not r_slug:
+            continue
+          r_target = (
+            dataset_regions_cfg.get(f"{local_stem}::{r_slug}")
+            or region_series_cfg.get(r_slug)
+          )
+          if r_target is not None and self.isValidMaskTarget(r_target):
+            self.table_masks_map[f"{local_stem}.region:{r_slug}"] = self.normaliseTargetSpec(r_target)
+          else:
+            sys.stderr.write(f"Console error: unaccounted region series '{local_stem}.region:{r_slug}' (raw='{sub_meta['regions'][x]}')\n")
+            self.unaccounted_items.append(f"{local_stem}.region:{r_slug}")
+
+        for x in range(len(sub_meta["localities"])):
+          l_slug = self.fetcher.normaliseAsciiSlug(sub_meta["localities"][x])
+          if not l_slug:
+            continue
+          l_target = (
+            dataset_localities_cfg.get(f"{local_stem}::{l_slug}")
+            or locality_series_cfg.get(l_slug)
+          )
+          if l_target is None:
+            cand_city = self.city_resolver.normaliseCityKey(l_slug)
+            if cand_city in self.city_masks_map:
+              l_target = f"city:{cand_city}"
+          if l_target is not None and self.isValidMaskTarget(l_target):
+            self.table_masks_map[f"{local_stem}.locality:{l_slug}"] = self.normaliseTargetSpec(l_target)
+          else:
+            sys.stderr.write(f"Console error: unaccounted locality series '{local_stem}.locality:{l_slug}' (raw='{sub_meta['localities'][x]}')\n")
+            self.unaccounted_items.append(f"{local_stem}.locality:{l_slug}")
+
+    print(self.config_loader.formatLocalisedString("masks_table_lookup_exported", [len(self.table_masks_map)]))
+
+    #Return statement
+    return self.table_masks_map
 
 
-  def h_build_subadmin_and_city_masks (self, arg1_country_masks):
-    """Compiles subadmin_masks.json and city_masks.json deliverables.
-
-    @param {dict} arg1_country_masks - Country masks dictionary.
-    @return {tuple} (subadmin_masks_map, city_masks_map) dictionaries.
+  def D_exportDeliverables (self):
     """
-    # Convert from parameters
-    let_country_masks = arg1_country_masks if isinstance(arg1_country_masks, dict) else {}
-
-    # Declare local instance variables
-    let_city_masks = {}
-    let_subadmin_entities = [
-      "england", "scotland", "wales", "northern_ireland",
-      "venice", "republic_of_venice", "goa", "portuguese_goa",
-      "java", "indonesia_outer_islands", "british_malaya", "british_borneo"
-    ]
-    let_subadmin_masks = {}
-
-    # Function body
-    for sub_key in let_subadmin_entities:
-      if sub_key in let_country_masks:
-        let_subadmin_masks[sub_key] = let_country_masks[sub_key]
-
-    # Return statement
-    return let_subadmin_masks, let_city_masks
-
-
-  def i_write_compact_flat_json (self, arg1_path, arg2_flat_map):
-    """Serialises a flat JSON map atomically with 2-space indented lines.
-
-    @param {str} arg1_path - Target output file path.
-    @param {dict} arg2_flat_map - Dictionary to serialise.
+    @brief Step D: Write country_masks.json, subadmin_masks.json, city_masks.json and table_masks.json to output/areal_masks/.
+    @return Dictionary of written deliverable file paths.
     """
-    # Convert from parameters
-    let_path = str(arg1_path or "")
-    let_flat_map = arg2_flat_map if isinstance(arg2_flat_map, dict) else {}
-
-    # Declare local instance variables
-    let_comma = ""
-    let_key_str = ""
-    let_keys_sorted = sorted(let_flat_map.keys())
-    let_lines = ["{"]
-    let_num_keys = len(let_keys_sorted)
-    let_tmp_path = f"{let_path}.part"
-    let_val_str = ""
-
-    # Guard clause
-    if not let_path:
-      return
-
-    # Function body
-    for i, key in enumerate(let_keys_sorted):
-      let_comma = "," if i + 1 < let_num_keys else ""
-      let_key_str = json.dumps(key, ensure_ascii=False)
-      let_val_str = json.dumps(let_flat_map[key], ensure_ascii=False).replace(",", ", ")
-      let_lines.append(f"  {let_key_str}: {let_val_str}{let_comma}")
-    let_lines.append("}\n")
-
-    os.makedirs(os.path.dirname(os.path.abspath(let_path)), exist_ok=True)
-    with open(let_tmp_path, "w", encoding="utf-8") as let_file_stream:
-      let_file_stream.write("\n".join(let_lines))
-    os.replace(let_tmp_path, let_path)
+    #Return statement
+    return self.synthesizer.C_exportFlatJsonMaps(
+      self.country_masks_map,
+      self.subadmin_masks_map,
+      self.city_masks_map,
+      self.table_masks_map
+    )
 
 
-  def j_run_pipeline (self):
-    """Executes the complete areal mask generation pipeline end-to-end.
-
-    @return {dict} Summary metrics of generated masks.
+  def E_verifyDeliverablesOnDisk (self):
     """
-    # Declare local instance variables
-    let_all_entities = []
-    let_base_entities = []
-    let_city_masks = {}
-    let_city_path = os.path.join(self.output_dir, str(self.outputs_cfg.get("city_masks_json", "city_masks.json")))
-    let_country_masks = {}
-    let_country_path = os.path.join(self.output_dir, str(self.outputs_cfg.get("country_masks_json", "country_masks.json")))
-    let_historical_entities = []
-    let_partition_res = {}
-    let_png_filename = str(self.outputs_cfg.get("provinces_png", "provinces.png"))
-    let_png_path = os.path.join(self.output_dir, let_png_filename)
-    let_seed = int(self.config_obj.get("palette_seed", 104729))
-    let_start_time = time.time()
-    let_subadmin_masks = {}
-    let_subadmin_path = os.path.join(self.output_dir, str(self.outputs_cfg.get("subadmin_masks_json", "subadmin_masks.json")))
-    let_table_masks = {}
-    let_table_path = os.path.join(self.output_dir, str(self.outputs_cfg.get("table_masks_json", "table_masks.json")))
+    @brief Step E: Reload all 5 deliverables from disk and verify 100% RGB, coordinate and table-reference integrity.
+    @return Boolean True when all verification checks pass with zero errors.
+    """
+    #Declare local instance variables
+    active_rgb_codes = None
+    all_referenced_codes = set()
+    city_json = {}
+    country_json = {}
+    ok_flag = True
+    out_dir = self.synthesizer.output_dir
+    outputs_cfg = self.synthesizer.outputs_cfg
+    png_arr = None
+    png_path = os.path.join(out_dir, str(outputs_cfg.get("provinces_png", "provinces.png")))
+    present_code_set = set()
+    subadmin_json = {}
+    table_json = {}
 
-    # Function body
-    print("=== Starting Areal Mask Synthesis Pipeline ===")
+    if not os.path.exists(png_path):
+      sys.stderr.write(f"Console error: missing provinces.png at {png_path}\n")
+      return False
 
-    # Step 1: Build modern base entities
-    print("Step 1/5: Building base modern territory entities from Natural Earth 10m...")
-    let_base_entities = self.c_build_base_entities()
-    print(f"Constructed {len(let_base_entities)} modern base entities.")
+    png_arr = np.asarray(Image.open(png_path))
+    if png_arr.shape != (self.rasteriser.height, self.rasteriser.width, 3):
+      sys.stderr.write(f"Console error: invalid provinces.png dimensions {png_arr.shape}\n")
+      ok_flag = False
 
-    # Step 2: Build historical entities from Phersu
-    print("Step 2/5: Extracting and rasterising historical border layers from Phersu...")
-    let_historical_entities = self.d_build_historical_entities(let_base_entities)
-    print(f"Constructed {len(let_historical_entities)} historical border entities.")
+    packed = (
+      (png_arr[:, :, 0].astype(np.uint32) << 16)
+      | (png_arr[:, :, 1].astype(np.uint32) << 8)
+      | png_arr[:, :, 2].astype(np.uint32)
+    )
+    active_rgb_codes = np.unique(packed[packed > 0])
+    present_code_set = set(int(c) for c in active_rgb_codes)
 
-    let_all_entities = let_base_entities + let_historical_entities
-    print(f"Total entities for equivalence class partitioning: {len(let_all_entities)}")
+    country_json = orjson.loads(open(os.path.join(out_dir, str(outputs_cfg.get("country_masks_json", "country_masks.json"))), "rb").read())
+    subadmin_json = orjson.loads(open(os.path.join(out_dir, str(outputs_cfg.get("subadmin_masks_json", "subadmin_masks.json"))), "rb").read())
+    city_json = orjson.loads(open(os.path.join(out_dir, str(outputs_cfg.get("city_masks_json", "city_masks.json"))), "rb").read())
+    table_json = orjson.loads(open(os.path.join(out_dir, str(outputs_cfg.get("table_masks_json", "table_masks.json"))), "rb").read())
 
-    # Step 3: Equivalence class partitioning & provinces.png synthesis
-    print("Step 3/5: Running Zobrist equivalence class partitioning...")
-    let_partition_res = self.e_partition_equivalence_classes(let_all_entities, let_png_path, let_seed)
-    print(f"Equivalence classes resolved: {let_partition_res['province_count']} atomic provinces.")
-    print(f"Covered pixels: {let_partition_res['covered_pixels']:,}")
+    for local_map_name, local_map in (("country_masks.json", country_json), ("subadmin_masks.json", subadmin_json)):
+      for local_k, rgb_list in local_map.items():
+        if not isinstance(rgb_list, list) or len(rgb_list) == 0:
+          sys.stderr.write(f"Console error: empty RGB mask for '{local_k}' in {local_map_name}\n")
+          ok_flag = False
+          continue
+        for x in range(len(rgb_list)):
+          c_trip = rgb_list[x]
+          c_int = (int(c_trip[0]) << 16) | (int(c_trip[1]) << 8) | int(c_trip[2])
+          all_referenced_codes.add(c_int)
+          if c_int == 0 or c_int not in present_code_set:
+            sys.stderr.write(f"Console error: RGB {c_trip} in {local_map_name}:{local_k} missing from provinces.png\n")
+            ok_flag = False
 
-    # Step 4: Compile country_masks.json
-    print("Step 4/5: Compiling country_masks.json...")
-    let_country_masks = self.f_build_country_masks(let_partition_res["entity_rgb_masks"])
-    self.i_write_compact_flat_json(let_country_path, let_country_masks)
+    if present_code_set != all_referenced_codes:
+      orphan_count = len(present_code_set - all_referenced_codes)
+      sys.stderr.write(f"Console error: {orphan_count} orphan RGB colourcodes on provinces.png\n")
+      ok_flag = False
 
-    # Step 5: Compile table_masks, subadmin_masks, city_masks
-    print("Step 5/5: Compiling table, subadmin, and city mask deliverables...")
-    let_table_masks = self.g_build_table_masks(let_country_masks)
-    self.i_write_compact_flat_json(let_table_path, let_table_masks)
+    for local_ck, coords in city_json.items():
+      if (
+        not isinstance(coords, list)
+        or len(coords) != 2
+        or not (-180.0 <= float(coords[0]) <= 180.0)
+        or not (-90.0 <= float(coords[1]) <= 90.0)
+      ):
+        sys.stderr.write(f"Console error: invalid city coordinates for '{local_ck}': {coords}\n")
+        ok_flag = False
 
-    let_subadmin_masks, let_city_masks = self.h_build_subadmin_and_city_masks(let_country_masks)
-    self.i_write_compact_flat_json(let_subadmin_path, let_subadmin_masks)
-    self.i_write_compact_flat_json(let_city_path, let_city_masks)
+    for local_tk, t_spec in table_json.items():
+      targets_list = t_spec if isinstance(t_spec, list) else [t_spec]
+      if not targets_list:
+        ok_flag = False
+      for x in range(len(targets_list)):
+        t_str = str(targets_list[x])
+        if t_str.startswith("country:"):
+          if t_str[8:] not in country_json:
+            sys.stderr.write(f"Console error: table_masks '{local_tk}' references missing {t_str}\n")
+            ok_flag = False
+        elif t_str.startswith("subadmin:"):
+          if t_str[9:] not in subadmin_json:
+            sys.stderr.write(f"Console error: table_masks '{local_tk}' references missing {t_str}\n")
+            ok_flag = False
+        elif t_str.startswith("city:"):
+          if t_str[5:] not in city_json:
+            sys.stderr.write(f"Console error: table_masks '{local_tk}' references missing {t_str}\n")
+            ok_flag = False
+        else:
+          sys.stderr.write(f"Console error: invalid prefix in table_masks '{local_tk}': {t_str}\n")
+          ok_flag = False
 
-    let_elapsed = time.time() - let_start_time
-    print(f"=== Pipeline Complete in {let_elapsed:.2f}s ===")
-    print(f"  provinces.png: {self.rasteriser.width}x{self.rasteriser.height} WGS84 Equirectangular")
-    print(f"  atomic provinces: {let_partition_res['province_count']}")
-    print(f"  country_masks.json: {len(let_country_masks)} country entries")
-    print(f"  table_masks.json: {len(let_table_masks)} table entries")
-    print(f"  subadmin_masks.json: {len(let_subadmin_masks)} subadmin entries")
-    print(f"  city_masks.json: {len(let_city_masks)} city entries")
+    if self.unaccounted_items:
+      ok_flag = False
 
-    # Return statement
+    #Return statement
+    return ok_flag
+
+
+  def extractRawTableSubEntities (self, arg1_raw_json_path):
+    """
+    @brief Scan a raw Collaboratory table JSON file and extract sorted non-NA Country, Region and Locality values.
+    @param arg1_raw_json_path Path to raw_tables/<stem>.json.
+    @return Dictionary containing 'countries', 'regions' and 'localities' sorted string lists.
+    """
+    #Convert from parameters
+    raw_json_path = str(arg1_raw_json_path or "")
+
+    #Declare local instance variables
+    countries_set = set()
+    data_obj = None
+    ignore_tokens = {"", "-1", "NA", "N/A", "NONE", "NULL"}
+    locs_set = set()
+    regions_set = set()
+    rows_iter = []
+
+    if not raw_json_path or not os.path.exists(raw_json_path):
+      return {"countries": [], "localities": [], "regions": []}
+
+    try:
+      with open(raw_json_path, "rb") as local_fh:
+        data_obj = orjson.loads(local_fh.read())
+    except Exception as local_err:
+      sys.stderr.write(f"Console error: failed reading raw table {raw_json_path}: {local_err}\n")
+      return {"countries": [], "localities": [], "regions": []}
+
+    rows_iter = list(data_obj.values()) if isinstance(data_obj, dict) else (data_obj if isinstance(data_obj, list) else [])
+    for i in range(len(rows_iter)):
+      local_r = rows_iter[i]
+      if not isinstance(local_r, dict):
+        continue
+      c_val = str(local_r.get("Country") or "").strip()
+      r_val = str(local_r.get("Region") or "").strip()
+      l_val = str(local_r.get("Locality") or "").strip()
+      if c_val.upper() not in ignore_tokens:
+        countries_set.add(c_val)
+      if r_val.upper() not in ignore_tokens:
+        regions_set.add(r_val)
+      if l_val.upper() not in ignore_tokens:
+        locs_set.add(l_val)
+
+    #Return statement
     return {
-      "atomic_provinces": let_partition_res["province_count"],
-      "country_masks": len(let_country_masks),
-      "elapsed_seconds": round(let_elapsed, 2),
-      "subadmin_masks": len(let_subadmin_masks),
-      "table_masks": len(let_table_masks)
+      "countries": sorted(countries_set),
+      "localities": sorted(locs_set),
+      "regions": sorted(regions_set)
     }
 
 
-  def find_source_folder (self, arg1_stem):
-    """Finds the data source directory name for a given table stem.
-
-    @param {str} arg1_stem - Spreadsheet file stem without extension.
-    @return {str} Source folder name within data/, or empty string if not found.
+  def isValidMaskTarget (self, arg1_target_spec):
     """
-    # Convert from parameters
-    let_stem = str(arg1_stem or "").strip()
+    @brief Validate that a single 'type:id' target string or list of target strings exists in the resolved mask dictionaries.
+    @param arg1_target_spec String or list of strings.
+    @return Boolean True if every target resolves to a valid non-empty mask or city coordinate.
+    """
+    #Convert from parameters
+    target_spec = arg1_target_spec
 
-    # Function body
-    for root, _, files in os.walk(self.data_dir):
-      for file_name in files:
-        if Path(file_name).stem == let_stem:
-          let_rel = os.path.relpath(root, self.data_dir)
-          # Return statement
-          return let_rel.split(os.sep)[0]
+    #Declare local instance variables
+    items_list = []
 
-    # Return statement
+    if isinstance(target_spec, str):
+      items_list = [target_spec]
+    elif isinstance(target_spec, list) and len(target_spec) > 0:
+      items_list = target_spec
+    else:
+      return False
+
+    for i in range(len(items_list)):
+      t_str = str(items_list[i] or "").strip()
+      if t_str.startswith("country:"):
+        cid = t_str[8:]
+        if cid not in self.country_masks_map or len(self.country_masks_map[cid]) == 0:
+          return False
+      elif t_str.startswith("subadmin:"):
+        sid = t_str[9:]
+        if sid not in self.subadmin_masks_map or len(self.subadmin_masks_map[sid]) == 0:
+          return False
+      elif t_str.startswith("city:"):
+        city_id = t_str[5:]
+        if city_id not in self.city_masks_map:
+          return False
+      else:
+        return False
+
+    #Return statement
+    return True
+
+
+  def normaliseTargetSpec (self, arg1_target_spec):
+    """
+    @brief Normalise a target specification into a trimmed string or sorted deduplicated list of strings.
+    @param arg1_target_spec String or list of target strings.
+    @return String (if 1 element) or sorted list of strings.
+    """
+    #Convert from parameters
+    target_spec = arg1_target_spec
+
+    #Declare local instance variables
+    cleaned_list = []
+
+    if isinstance(target_spec, str):
+      return target_spec.strip()
+    if isinstance(target_spec, list):
+      cleaned_list = sorted(set(str(x).strip() for x in target_spec if str(x).strip()))
+      if len(cleaned_list) == 1:
+        return cleaned_list[0]
+      return cleaned_list
+
+    #Return statement
     return ""
 
 
-  def resolve_table_country (self, arg1_stem, arg2_folder):
-    """Resolves a table stem and source folder into a canonical era-specific country key.
-
-    @param {str} arg1_stem - Spreadsheet file stem.
-    @param {str} arg2_folder - Source folder name.
-    @return {str} Canonical country identifier matching an entry in country_masks.json.
+  def runPipeline (self):
     """
-    # Convert from parameters
-    let_folder = str(arg2_folder or "").lower()
-    let_stem = str(arg1_stem or "").lower()
-
-    # Function body
-    # 1. Brazil (1650 coastal captaincies, 1800 viceroyalty, or modern)
-    if "brazil" in let_stem or "brazil" in let_folder:
-      if "1650" in let_stem:
-        return "brazil_1650"
-      if "1800" in let_stem:
-        return "brazil_1800"
-      if "1650" in let_folder and "1800" not in let_folder:
-        return "brazil_1650"
-      if "1800" in let_folder and "1650" not in let_folder:
-        return "brazil_1800"
-      return "brazil"
-
-    # 2. United States (1800 or modern)
-    if "unitedstates" in let_stem or "united_states" in let_stem or "united_states" in let_folder:
-      if "1800" in let_stem or "1800" in let_folder:
-        return "united_states_1800"
-      return "united_states"
-
-    # 3. Russia (1500 Moscow, 1650 Muscovy, 1800/1900 Russian Empire, 2000 modern)
-    if "russia" in let_stem or "russia" in let_folder:
-      if "1500" in let_stem:
-        return "russia_1500"
-      if "1650" in let_stem:
-        return "russia_1650"
-      if "1800" in let_stem:
-        return "russia_1800"
-      if "1900" in let_stem:
-        return "russia_1900"
-      return "russia"
-
-    # 4. Venice (1500, 1650, 1800, modern)
-    if "venice" in let_stem or "venice" in let_folder:
-      if "1500" in let_stem:
-        return "venice_1500"
-      if any(y in let_stem for y in ["1650", "1660", "1672"]):
-        return "venice_1650"
-      if any(y in let_stem for y in ["1785", "1800"]):
-        return "venice_1800"
-      return "venice"
-
-    # 5. Bolivia (1900 pre-Petropolis or 2000 modern)
-    if "bolivia" in let_stem or "bolivia" in let_folder:
-      if "1900" in let_stem:
-        return "bolivia_1900"
-      return "bolivia"
-
-    # 6. France (1900/1906 without Alsace-Lorraine or modern)
-    if "france" in let_stem or "france" in let_folder:
-      if "1900" in let_stem or "1906" in let_stem:
-        return "france_1900"
-      return "france"
-
-    # 7. Greece (1920 Treaty of Sevres or modern)
-    if "greece" in let_stem or "greece" in let_folder:
-      if "1920" in let_stem:
-        return "greece_1920"
-      return "greece"
-
-    # 8. India & Subcontinent (1900 British Raj, 1800 Deccan, Goa, modern)
-    if "goa" in let_stem or "goa" in let_folder:
-      return "goa"
-    if any(k in let_stem for k in ["bihar 1900", "deccan 1900", "india 1900", "sykes"]):
-      return "india_1900"
-    if any(k in let_stem for k in ["bihar", "deccan", "india"]) or "india" in let_folder:
-      return "india"
-
-    # 9. Ceylon (1650 or modern)
-    if "ceylon" in let_stem or "ceylon" in let_folder:
-      if "1650" in let_stem or "1650" in let_folder:
-        return "ceylon_1650"
-      return "ceylon"
-
-    # 10. Island Southeast Asia & Java
-    if "british borneo" in let_stem or "borneo" in let_stem:
-      return "british_borneo"
-    if "malaya" in let_stem:
-      return "british_malaya"
-    if "philippines" in let_stem:
-      return "philippines"
-    if "outer islands" in let_stem:
-      return "indonesia_outer_islands"
-    if "java" in let_stem or "java" in let_folder:
-      if "1650" in let_stem:
-        return "java_1650"
-      if "1800" in let_stem:
-        return "java_1800"
-      if "1900" in let_stem:
-        return "java_1900"
-      return "java"
-
-    # 11. England & United Kingdom
-    if "england" in let_stem or "england" in let_folder:
-      return "england"
-    if any(k in let_stem for k in ["uk1901", "database calculations"]) or "united_kingdom" in let_folder:
-      return "united_kingdom"
-
-    # 12. Standard modern countries
-    for country in ["argentina", "belarus", "italy", "japan", "netherlands", "south_africa", "spain", "taiwan", "turkey"]:
-      if country in let_stem or country in let_folder or country.replace("_", "") in let_stem:
-        return country
-
-    # Return statement
-    return "unknown"
-
-
-  def to_snake_key (self, arg1_name):
-    """Converts an arbitrary display name or place string to a normalised snake_case key.
-
-    @param {str} arg1_name - Input string.
-    @return {str} Normalised snake_case key.
+    @brief Execute Steps A through E of the Global Collaboratory areal mask pipeline and report elapsed wall-clock time.
+    @return Boolean True when all deliverables are generated and verified with zero errors.
     """
-    # Convert from parameters
-    let_name = str(arg1_name or "").strip().lower()
+    #Declare local instance variables
+    elapsed_sec = 0.0
+    ok_status = False
+    t_start = time.time()
 
-    # Function body
-    let_name = re.sub(r"[^\w\s-]", "", let_name)
-    let_name = re.sub(r"[\s-]+", "_", let_name)
+    print(self.config_loader.formatLocalisedString(
+      "masks_initialised",
+      [self.rasteriser.width, self.rasteriser.height, self.rasteriser.crs]
+    ))
+    self.A_resolveCanonicalGeographies()
+    self.B_synthesiseProvinceRaster()
+    self.C_mapCollaboratoryTables()
+    self.D_exportDeliverables()
+    ok_status = self.E_verifyDeliverablesOnDisk()
+    elapsed_sec = round(time.time() - t_start, 2)
+    ds_count = len([k for k in self.table_masks_map.keys() if k.endswith(".json")])
+    sub_count = len([k for k in self.table_masks_map.keys() if ".region:" in k or ".locality:" in k or ".country:" in k])
+    print(self.config_loader.formatLocalisedString(
+      "masks_verified_done",
+      [ds_count, ds_count + len([x for x in self.unaccounted_items if x.startswith("dataset:")]), sub_count, len(self.unaccounted_items), elapsed_sec]
+    ))
 
-    # Return statement
-    return let_name
+    #Return statement
+    return ok_status
 
 
 if __name__ == "__main__":
-  let_generator = ArealMaskGenerator()
-  let_generator.j_run_pipeline()
+  pipeline_obj = ArealMaskGenerator()
+  if not pipeline_obj.runPipeline():
+    sys.exit(1)
