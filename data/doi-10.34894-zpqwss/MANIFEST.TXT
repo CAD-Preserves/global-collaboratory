@@ -1,0 +1,42 @@
+Database.calculations/database calculations 65+ workers-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 360118 bytes.
+Database.calculations/database calculations 65+ workers detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 825375 bytes.
+Database.calculations/database calculations no age branches-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 120746 bytes.
+Database.calculations/database calculations no age branches detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 84489 bytes.
+Database.calculations/database calculations no age empl-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 57459 bytes.
+Database.calculations/database calculations no age empl detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 65101 bytes.
+Database.calculations/database calculations no age IBS-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 61516 bytes.
+Database.calculations/database calculations no age not working-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 90617 bytes.
+Database.calculations/database calculations 65+ IBS-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 93137 bytes.
+Database.calculations/database calculations 65+ not working-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 59371 bytes.
+Database.calculations/database calculations 65+ self-employed changed-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 104853 bytes.
+Database.calculations/database calculations 65+ self-employed changed detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 180274 bytes.
+Database.calculations/database calculations 65+ self-employed not changed-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 325628 bytes.
+Database.calculations/database calculations 65+ self-employed not changed detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 708377 bytes.
+Database.calculations/database calculations 65+ worker and partner-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 38845 bytes.
+Database.calculations/database calculations 65+ worker and partner detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 37997 bytes.
+Methodological paper UK1901-1.docx (application/vnd.openxmlformats-officedocument.wordprocessingml.document) 313512 bytes.
+SPSS guide-1.docx (application/vnd.openxmlformats-officedocument.wordprocessingml.document) 20763 bytes.
+UK1901-abridged.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 7661977 bytes.
+UK1901-full.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 10046110 bytes.
+Abridged data guide UK1901-1.docx (application/vnd.openxmlformats-officedocument.wordprocessingml.document) 13719 bytes.
+Database.calculations/database calculations 15-64 employers changed-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 222001 bytes.
+Database.calculations/database calculations 15-64 employers changed detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 339203 bytes.
+Database.calculations/database calculations 15-64 employers not changed-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 307359 bytes.
+Database.calculations/database calculations 15-64 employers not changed detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 851133 bytes.
+Database.calculations/database calculations 15-64 hospitals-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 24224 bytes.
+Database.calculations/database calculations 15-64 self-employed changed no head detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 324788 bytes.
+Database.calculations/database calculations 15-64 self-employed unchanged-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 565588 bytes.
+Database.calculations/database calculations 15-64 self-employed unchanged heads detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 403490 bytes.
+Database.calculations/database calculations 15-64 self-employed unchanged no heads detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 1007481 bytes.
+Database.calculations/database calculations 15-64 worker and partner-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 80601 bytes.
+Database.calculations/database calculations 15-64 worker and partner detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 134129 bytes.
+Database.calculations/database calculations 65+ employers-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 199902 bytes.
+Database.calculations/database calculations 65+ employers detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 455425 bytes.
+Database.calculations/database calculations 15-64 IBS-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 116811 bytes.
+Database.calculations/database calculations 15-64 market detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 1439385 bytes.
+Database.calculations/database calculations 15-64 market UK-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 627736 bytes.
+Database.calculations/database calculations 15-64 non market detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 172626 bytes.
+Database.calculations/database calculations 15-64 non market UK-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 58273 bytes.
+Database.calculations/database calculations 15-64 not working-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 62283 bytes.
+Database.calculations/database calculations 15-64 self-employed changed-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 241127 bytes.
+Database.calculations/database calculations 15-64 self-employed changed heads detail-1.xlsx (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) 218805 bytes.
