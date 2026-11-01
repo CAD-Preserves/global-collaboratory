@@ -1,14 +1,14 @@
 {
-  "british_borneo": [[21,  139,  37],  [85,  107,  33]],
-  "british_malaya": [[53,  123,  35]],
-  "england": [[164,  66,  252]],
-  "goa": [[227,  162,  232]],
-  "indonesia_outer_islands": [[3,  18,  214]],
-  "java": [[162,  194,  204]],
-  "northern_ireland": [[193,  50,  154]],
-  "portuguese_goa": [[227,  162,  232]],
-  "republic_of_venice": [[14,  138,  69]],
-  "scotland": [[208,  42,  121]],
-  "venice": [[14,  138,  69]],
-  "wales": [[46,  122,  67]]
+  "british_borneo": [[4,  18,  246],  [212,  42,  249]],
+  "british_malaya": [[127,  82,  94]],
+  "england": [[76,  234,  17]],
+  "goa": [[148,  203,  13],  [207,  42,  89]],
+  "indonesia_outer_islands": [[110,  90,  63]],
+  "java": [[63,  242,  114]],
+  "northern_ireland": [[171,  185,  235]],
+  "portuguese_goa": [[148,  203,  13],  [207,  42,  89]],
+  "republic_of_venice": [[81,  234,  177],  [195,  50,  218]],
+  "scotland": [[221,  34,  24]],
+  "venice": [[81,  234,  177],  [195,  50,  218]],
+  "wales": [[237,  26,  23]]
 }
