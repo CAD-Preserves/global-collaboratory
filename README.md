@@ -4,4 +4,4 @@
 
 Confoederatio, including CAD-Preservés, is a separate institution not affiliated with IISH. This repository exists to encode their `.xlsx` spreadsheets as `.json`, with areal masking. Two tabular versions will be produced, one with harmonised sectoral schema (agriculture, manufacturing, services, informal labour, not in work); and the other encoding KNAW's original schema.
 
-These are to be placed in the `/output/` folder.
+These are to be placed in the `/output/` folder. Raw files are placed in `/data/`.
