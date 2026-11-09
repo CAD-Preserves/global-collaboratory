@@ -1,6 +1,7 @@
 {
-  "agriculture_1905": 281665,
-  "manufacturing_1905": 79025,
+  "agriculture_1905": 4436536,
+  "informal_labour_1905": 541842,
+  "manufacturing_1905": 182720,
   "not_in_work_1905": 5296526,
-  "services_1905": 151423
+  "services_1905": 322340
 }

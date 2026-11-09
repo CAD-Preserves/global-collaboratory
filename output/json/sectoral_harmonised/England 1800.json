@@ -1,4 +1,12 @@
 {
-  "not_in_work_1778-1779": 17404.05,
-  "not_in_work_1780-1781": 16872
+  "agriculture_1778": 572,
+  "agriculture_1780": 3632,
+  "informal_labour_1778": 720,
+  "informal_labour_1780": 2400,
+  "manufacturing_1778": 15119,
+  "manufacturing_1780": 9443,
+  "not_in_work_1778": 19365,
+  "not_in_work_1780": 18224,
+  "services_1778": 7225,
+  "services_1780": 7765
 }

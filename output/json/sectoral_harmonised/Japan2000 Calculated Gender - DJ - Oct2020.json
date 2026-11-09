@@ -1,6 +1,7 @@
 {
-  "agriculture_2000": 3220000,
+  "agriculture_2000": 3230000,
+  "informal_labour_2000": 160000,
   "manufacturing_2000": 21510000,
   "not_in_work_2000": 62410000,
-  "services_2000": 39320000
+  "services_2000": 39540000
 }

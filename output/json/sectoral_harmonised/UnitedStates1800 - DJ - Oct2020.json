@@ -1,10 +1,12 @@
 {
-  "agriculture_1820": 4333874,
-  "agriculture_1860": 6412990,
-  "manufacturing_1820": 381027,
-  "manufacturing_1860": 2128400,
+  "agriculture_1820": 7286414,
+  "agriculture_1860": 7521235,
+  "informal_labour_1820": 20872,
+  "informal_labour_1860": 26113,
+  "manufacturing_1820": 916566,
+  "manufacturing_1860": 2258966,
   "not_in_work_1820": 6836,
-  "not_in_work_1860": 10600951,
-  "services_1820": 181240,
-  "services_1860": 1562599
+  "not_in_work_1860": 20219471,
+  "services_1820": 1242411,
+  "services_1860": 1642539
 }

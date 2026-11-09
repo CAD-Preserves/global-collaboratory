@@ -1,5 +1,7 @@
 {
-  "agriculture_1800": 91977.62,
-  "manufacturing_1800": 70163.63,
-  "not_in_work_1800": 3287682
+  "agriculture_1800": 1989252,
+  "informal_labour_1800": 21928,
+  "manufacturing_1800": 1062052,
+  "not_in_work_1800": 3406248,
+  "services_1800": 682553
 }

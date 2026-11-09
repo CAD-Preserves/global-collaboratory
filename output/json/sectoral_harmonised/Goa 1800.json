@@ -1,6 +1,7 @@
 {
-  "agriculture_1848": 3306,
-  "manufacturing_1848": 1665,
+  "agriculture_1848": 128506,
+  "informal_labour_1848": 5900,
+  "manufacturing_1848": 42162,
   "not_in_work_1848": 114192,
-  "services_1848": 4279
+  "services_1848": 75051
 }
